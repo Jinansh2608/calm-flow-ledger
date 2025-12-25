@@ -1,72 +1,70 @@
 import { ArrowRight, FileText, Package, Truck, CreditCard, TrendingUp } from "lucide-react";
+import { useDashboard } from "@/contexts/DashboardContext";
 import { cn } from "@/lib/utils";
 
-interface FlowStep {
-  label: string;
-  count: number;
-  value: string;
-  icon: React.ReactNode;
-  status: "complete" | "active" | "pending";
-}
-
-const flowSteps: FlowStep[] = [
-  {
-    label: "Client PI",
-    count: 24,
-    value: "₹48.5L",
-    icon: <FileText className="h-4 w-4" />,
-    status: "complete",
-  },
-  {
-    label: "Client PO",
-    count: 22,
-    value: "₹45.2L",
-    icon: <Package className="h-4 w-4" />,
-    status: "complete",
-  },
-  {
-    label: "Vendor PO",
-    count: 38,
-    value: "₹32.8L",
-    icon: <Truck className="h-4 w-4" />,
-    status: "active",
-  },
-  {
-    label: "Execution",
-    count: 18,
-    value: "78%",
-    icon: <Package className="h-4 w-4" />,
-    status: "active",
-  },
-  {
-    label: "Payment",
-    count: 15,
-    value: "₹28.4L",
-    icon: <CreditCard className="h-4 w-4" />,
-    status: "pending",
-  },
-  {
-    label: "Profit",
-    count: 12,
-    value: "₹8.2L",
-    icon: <TrendingUp className="h-4 w-4" />,
-    status: "pending",
-  },
-];
+const formatValue = (value: number) => {
+  if (value >= 100000) {
+    return `₹${(value / 100000).toFixed(1)}L`;
+  }
+  return `₹${value.toLocaleString("en-IN")}`;
+};
 
 const POFlowSection = () => {
+  const { flowData } = useDashboard();
+
+  const flowSteps = [
+    {
+      label: "Client PI",
+      count: flowData.clientPI.count,
+      value: formatValue(flowData.clientPI.value),
+      icon: <FileText className="h-4 w-4" />,
+      status: "complete" as const,
+    },
+    {
+      label: "Client PO",
+      count: flowData.clientPO.count,
+      value: formatValue(flowData.clientPO.value),
+      icon: <Package className="h-4 w-4" />,
+      status: "complete" as const,
+    },
+    {
+      label: "Vendor PO",
+      count: flowData.vendorPO.count,
+      value: formatValue(flowData.vendorPO.value),
+      icon: <Truck className="h-4 w-4" />,
+      status: "active" as const,
+    },
+    {
+      label: "Execution",
+      count: flowData.execution.count,
+      value: `${flowData.execution.percentage}%`,
+      icon: <Package className="h-4 w-4" />,
+      status: "active" as const,
+    },
+    {
+      label: "Payment",
+      count: flowData.payment.count,
+      value: formatValue(flowData.payment.value),
+      icon: <CreditCard className="h-4 w-4" />,
+      status: "pending" as const,
+    },
+    {
+      label: "Profit",
+      count: flowData.profit.count,
+      value: formatValue(flowData.profit.value),
+      icon: <TrendingUp className="h-4 w-4" />,
+      status: "pending" as const,
+    },
+  ];
+
   return (
-    <div className="rounded-xl border bg-card p-5 shadow-card opacity-0 animate-fade-in" style={{ animationDelay: "300ms" }}>
+    <div className="rounded-xl border bg-card p-5 shadow-card">
       <h3 className="font-display font-semibold text-foreground mb-4">Project & PO Flow</h3>
       
       <div className="flex items-center justify-between overflow-x-auto pb-2">
         {flowSteps.map((step, index) => (
           <div key={step.label} className="flex items-center">
-            <div
-              className={cn(
-                "flex flex-col items-center min-w-[100px]",
-              )}
-            >
+            <div className="flex flex-col items-center min-w-[100px]">
               <div
                 className={cn(
                   "flex h-12 w-12 items-center justify-center rounded-xl mb-2 transition-all",

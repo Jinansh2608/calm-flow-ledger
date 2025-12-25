@@ -42,11 +42,10 @@ const SummaryCard = ({
   return (
     <div
       className={cn(
-        "rounded-xl border p-5 shadow-card transition-all duration-300 hover:shadow-soft opacity-0 animate-fade-in",
+        "rounded-xl border p-5 shadow-card transition-all duration-300 hover:shadow-soft",
         variantStyles[variant],
         className
       )}
-      style={{ animationDelay: `${delay}ms` }}
     >
       <div className="flex items-start justify-between">
         <div className="space-y-1">
