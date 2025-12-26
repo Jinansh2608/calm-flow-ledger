@@ -1,6 +1,7 @@
 import { Bell, Search, User, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const DashboardHeader = () => {
   return (
@@ -30,6 +31,8 @@ const DashboardHeader = () => {
             className="w-64 pl-9 h-9 bg-muted/50 border-transparent focus:border-primary focus:bg-background"
           />
         </div>
+
+        <ThemeToggle />
 
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-4 w-4 text-muted-foreground" />
