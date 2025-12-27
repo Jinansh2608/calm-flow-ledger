@@ -2,6 +2,7 @@ import { Bell, Search, User, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import NewOrderDialog from "./NewOrderDialog";
 
 const DashboardHeader = () => {
   return (
@@ -13,14 +14,6 @@ const DashboardHeader = () => {
           </div>
           <span className="font-display font-semibold text-lg text-foreground">ProXecute</span>
         </div>
-        
-        <nav className="hidden md:flex items-center gap-1 ml-8">
-          <Button variant="ghost" size="sm" className="text-foreground">Dashboard</Button>
-          <Button variant="ghost" size="sm" className="text-muted-foreground">Projects</Button>
-          <Button variant="ghost" size="sm" className="text-muted-foreground">Clients</Button>
-          <Button variant="ghost" size="sm" className="text-muted-foreground">Vendors</Button>
-          <Button variant="ghost" size="sm" className="text-muted-foreground">Reports</Button>
-        </nav>
       </div>
 
       <div className="flex items-center gap-3">
@@ -31,6 +24,8 @@ const DashboardHeader = () => {
             className="w-64 pl-9 h-9 bg-muted/50 border-transparent focus:border-primary focus:bg-background"
           />
         </div>
+
+        <NewOrderDialog />
 
         <ThemeToggle />
 
