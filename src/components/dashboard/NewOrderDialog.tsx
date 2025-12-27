@@ -21,11 +21,14 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 
+type FileCategory = "po" | "pi" | "quotation" | "invoice" | "contract" | "other";
+
 interface UploadedFile {
   id: string;
   name: string;
   size: number;
   type: string;
+  category: FileCategory;
 }
 
 interface OrderDetails {
@@ -37,6 +40,15 @@ interface OrderDetails {
   files: UploadedFile[];
   isPOLate: boolean;
 }
+
+const fileCategoryLabels: Record<FileCategory, string> = {
+  po: "Purchase Order (PO)",
+  pi: "Proforma Invoice (PI)",
+  quotation: "Quotation",
+  invoice: "Invoice",
+  contract: "Contract",
+  other: "Other Document",
+};
 
 const NewOrderDialog = () => {
   const [open, setOpen] = useState(false);
@@ -62,6 +74,7 @@ const NewOrderDialog = () => {
         name: file.name,
         size: file.size,
         type: file.type,
+        category: "other",
       }));
       setFiles((prev) => [...prev, ...newFiles]);
     }
@@ -72,6 +85,12 @@ const NewOrderDialog = () => {
 
   const removeFile = (id: string) => {
     setFiles((prev) => prev.filter((f) => f.id !== id));
+  };
+
+  const updateFileCategory = (id: string, category: FileCategory) => {
+    setFiles((prev) =>
+      prev.map((f) => (f.id === id ? { ...f, category } : f))
+    );
   };
 
   const formatFileSize = (bytes: number) => {
@@ -278,33 +297,51 @@ const NewOrderDialog = () => {
                   accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
                 />
 
-                {/* Uploaded Files List */}
+                {/* Uploaded Files List with Category Selection */}
                 {files.length > 0 && (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {files.map((file) => (
                       <div
                         key={file.id}
-                        className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-border"
+                        className="p-3 rounded-lg bg-muted/50 border border-border space-y-2"
                       >
-                        <div className="flex items-center gap-3">
-                          <FileText className="h-4 w-4 text-primary" />
-                          <div>
-                            <p className="text-sm font-medium truncate max-w-[200px]">
-                              {file.name}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {formatFileSize(file.size)}
-                            </p>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <FileText className="h-4 w-4 text-primary shrink-0" />
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium truncate">
+                                {file.name}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {formatFileSize(file.size)}
+                              </p>
+                            </div>
                           </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 shrink-0"
+                            onClick={() => removeFile(file.id)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => removeFile(file.id)}
+                        <Select
+                          value={file.category}
+                          onValueChange={(value: FileCategory) => updateFileCategory(file.id, value)}
                         >
-                          <X className="h-4 w-4" />
-                        </Button>
+                          <SelectTrigger className="h-9">
+                            <SelectValue placeholder="Select document type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="po">This is PO</SelectItem>
+                            <SelectItem value="pi">This is PI</SelectItem>
+                            <SelectItem value="quotation">This is Quotation</SelectItem>
+                            <SelectItem value="invoice">This is Invoice</SelectItem>
+                            <SelectItem value="contract">This is Contract</SelectItem>
+                            <SelectItem value="other">Other Document</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     ))}
                   </div>
@@ -384,11 +421,16 @@ const NewOrderDialog = () => {
                       <span className="text-sm text-muted-foreground block mb-2">
                         Attachments ({createdOrder.files.length})
                       </span>
-                      <div className="space-y-1">
+                      <div className="space-y-2">
                         {createdOrder.files.map((file) => (
-                          <div key={file.id} className="flex items-center gap-2 text-sm">
-                            <FileText className="h-3 w-3 text-primary" />
-                            <span className="truncate">{file.name}</span>
+                          <div key={file.id} className="flex items-center justify-between text-sm p-2 rounded bg-muted/50">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <FileText className="h-3 w-3 text-primary shrink-0" />
+                              <span className="truncate">{file.name}</span>
+                            </div>
+                            <span className="text-xs text-muted-foreground shrink-0 ml-2">
+                              {fileCategoryLabels[file.category]}
+                            </span>
                           </div>
                         ))}
                       </div>
