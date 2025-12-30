@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { Truck, Clock, AlertCircle, Package, ChevronRight, Building2, CreditCard, FileText, X } from "lucide-react";
+import { Truck, Clock, AlertCircle, Package, ChevronRight, Building2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useDashboard, VendorPO } from "@/contexts/DashboardContext";
@@ -30,6 +29,14 @@ const paymentStatusConfig = {
   partial: { label: "Partial", className: "bg-warning-light text-warning-foreground border-warning/20" },
   pending: { label: "Pending", className: "bg-muted text-muted-foreground border-border" },
   overdue: { label: "Overdue", className: "bg-destructive-light text-destructive border-destructive/20" },
+};
+
+const getExecutionStatus = (progress: number) => {
+  if (progress === 100) return { label: "Completed", className: "bg-success-light text-success border-success/20" };
+  if (progress >= 70) return { label: "Final Stage", className: "bg-primary/10 text-primary border-primary/20" };
+  if (progress >= 30) return { label: "In Progress", className: "bg-warning-light text-warning-foreground border-warning/20" };
+  if (progress > 0) return { label: "Started", className: "bg-muted text-foreground border-border" };
+  return { label: "Not Started", className: "bg-muted text-muted-foreground border-border" };
 };
 
 const VendorDetailDialog = ({ 
@@ -91,13 +98,12 @@ const VendorDetailDialog = ({
             </div>
           </div>
 
-          {/* Progress */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-foreground">Execution Progress</span>
-              <span className="text-sm font-bold text-primary">{vendor.progress}%</span>
-            </div>
-            <Progress value={vendor.progress} className="h-2" />
+          {/* Execution Status */}
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-foreground">Execution Status</span>
+            <Badge className={getExecutionStatus(vendor.progress).className} variant="outline">
+              {getExecutionStatus(vendor.progress).label}
+            </Badge>
           </div>
 
           <Separator />
@@ -235,12 +241,11 @@ const VendorPOTracking = () => {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Execution Progress</span>
-                    <span className="font-medium text-foreground">{vpo.progress}%</span>
-                  </div>
-                  <Progress value={vpo.progress} className="h-1.5" />
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Execution Status</span>
+                  <Badge className={getExecutionStatus(vpo.progress).className} variant="outline">
+                    {getExecutionStatus(vpo.progress).label}
+                  </Badge>
                 </div>
 
                 <div className="flex items-center justify-between mt-3 pt-3 border-t">
