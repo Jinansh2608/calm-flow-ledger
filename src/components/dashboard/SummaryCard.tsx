@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -82,7 +83,7 @@ const SummaryCard = ({
       <div
         onClick={handleClick}
         className={cn(
-          "rounded-xl border p-5 shadow-card transition-all duration-300 hover:shadow-soft",
+          "rounded-xl border p-5 shadow-card transition-all duration-300 hover:shadow-lg hover:-translate-y-1 premium-gradient",
           details && "cursor-pointer group",
           variantStyles[variant],
           className
@@ -143,6 +144,7 @@ const SummaryCard = ({
                   )}
                 </div>
               </DialogTitle>
+              <DialogDescription className="sr-only">{details.title}</DialogDescription>
             </DialogHeader>
 
             <div className="mt-4 space-y-4">

@@ -10,6 +10,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 
 const formatCurrency = (value: number) => {
@@ -29,6 +30,11 @@ const paymentStatusConfig = {
   partial: { label: "Partial", className: "bg-warning-light text-warning-foreground border-warning/20" },
   pending: { label: "Pending", className: "bg-muted text-muted-foreground border-border" },
   overdue: { label: "Overdue", className: "bg-destructive-light text-destructive border-destructive/20" },
+};
+
+const getPaymentStatusConfig = (status: string) => {
+  return paymentStatusConfig[status as keyof typeof paymentStatusConfig] || 
+    { label: status, className: "bg-muted text-muted-foreground border-border" };
 };
 
 const getExecutionStatus = (progress: number) => {
@@ -66,15 +72,23 @@ const VendorDetailDialog = ({
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
               <Building2 className="h-5 w-5 text-primary" />
             </div>
-            <div>
-              <span className="font-display">{vendor.vendor}</span>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="font-display font-bold truncate text-lg">{vendor.vendor}</span>
+                {vendor.poNo && (
+                    <Badge variant="secondary" className="text-[9px] font-black uppercase tracking-widest h-5 px-2 bg-primary/10 text-primary border-none rounded-md">
+                        {vendor.poNo}
+                    </Badge>
+                )}
+              </div>
               <div className="flex items-center gap-2 mt-1">
-                <Badge className={paymentStatusConfig[vendor.paymentStatus].className} variant="outline">
-                  {paymentStatusConfig[vendor.paymentStatus].label}
+                <Badge className={getPaymentStatusConfig(vendor.paymentStatus).className} variant="outline">
+                  {getPaymentStatusConfig(vendor.paymentStatus).label}
                 </Badge>
               </div>
             </div>
           </DialogTitle>
+          <DialogDescription className="sr-only">Vendor details</DialogDescription>
         </DialogHeader>
 
         <div className="mt-4 space-y-5">
@@ -193,8 +207,8 @@ const VendorPOTracking = () => {
 
   return (
     <>
-      <div className="rounded-xl border bg-card shadow-card">
-        <div className="flex items-center justify-between p-5 border-b">
+      <div className="rounded-xl border bg-card shadow-card overflow-hidden premium-gradient">
+        <div className="flex items-center justify-between p-5 border-b glass-panel">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
               <Truck className="h-4 w-4 text-primary" />
@@ -228,14 +242,21 @@ const VendorPOTracking = () => {
               >
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <h4 className="font-medium text-foreground group-hover:text-primary transition-colors">{vpo.vendor}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      PO Value: <span className="font-medium text-foreground">{formatCurrency(vpo.poValue)}</span>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-bold text-foreground group-hover:text-primary transition-colors">{vpo.vendor}</h4>
+                      {vpo.poNo && (
+                        <span className="text-[9px] font-black uppercase tracking-widest bg-primary/5 text-primary/70 px-1.5 py-0.5 rounded border border-primary/10 leading-none">
+                          {vpo.poNo}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      Allocation: <span className="font-black text-foreground">{formatCurrency(vpo.poValue)}</span>
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge className={paymentStatusConfig[vpo.paymentStatus].className} variant="outline">
-                      {paymentStatusConfig[vpo.paymentStatus].label}
+                    <Badge className={getPaymentStatusConfig(vpo.paymentStatus).className} variant="outline">
+                      {getPaymentStatusConfig(vpo.paymentStatus).label}
                     </Badge>
                     <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>

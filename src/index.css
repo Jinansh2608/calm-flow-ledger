@@ -6,124 +6,124 @@
 
 @layer base {
   :root {
-    /* Calm Finance Dashboard Theme */
-    --background: 210 20% 99%;
-    --foreground: 215 25% 15%;
+    /* Calm Finance Dashboard Theme - Premium & Tinted */
+    --background: 210 30% 98.4%;
+    --foreground: 222 47% 11%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 215 25% 15%;
+    --card: 210 30% 99.5%;
+    --card-foreground: 222 47% 11%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 15%;
+    --popover: 210 30% 99.5%;
+    --popover-foreground: 222 47% 11%;
 
-    /* Soft Teal Primary */
-    --primary: 199 89% 48%;
+    /* Sophisticated Deep Teal Primary */
+    --primary: 196 90% 35%;
     --primary-foreground: 0 0% 100%;
-    --primary-light: 199 89% 96%;
-    --primary-medium: 199 70% 60%;
+    --primary-light: 196 90% 96%;
+    --primary-medium: 196 80% 50%;
 
-    --secondary: 210 20% 96%;
-    --secondary-foreground: 215 25% 25%;
+    --secondary: 210 25% 94%;
+    --secondary-foreground: 210 40% 20%;
 
-    --muted: 210 15% 96%;
-    --muted-foreground: 215 15% 50%;
+    --muted: 210 25% 94%;
+    --muted-foreground: 215 20% 45%;
 
-    --accent: 199 89% 96%;
-    --accent-foreground: 199 89% 35%;
+    --accent: 196 90% 96%;
+    --accent-foreground: 196 90% 30%;
 
-    /* Status Colors - Calm variants */
-    --success: 160 60% 45%;
-    --success-light: 160 60% 95%;
-    --success-foreground: 160 60% 20%;
+    /* Status Colors - Refined variants */
+    --success: 162 70% 38%;
+    --success-light: 162 70% 96%;
+    --success-foreground: 162 80% 15%;
 
-    --warning: 38 92% 50%;
-    --warning-light: 38 92% 95%;
-    --warning-foreground: 38 50% 25%;
+    --warning: 34 94% 45%;
+    --warning-light: 34 94% 96%;
+    --warning-foreground: 34 80% 18%;
 
-    --destructive: 0 72% 51%;
-    --destructive-light: 0 72% 96%;
+    --destructive: 0 84% 54%;
+    --destructive-light: 0 84% 97%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 20% 92%;
-    --input: 214 20% 92%;
-    --ring: 199 89% 48%;
+    --border: 210 20% 90%;
+    --input: 210 20% 90%;
+    --ring: 196 90% 35%;
 
     --radius: 0.75rem;
 
-    /* Shadows */
-    --shadow-sm: 0 1px 2px 0 hsl(215 25% 15% / 0.03);
-    --shadow-md: 0 4px 6px -1px hsl(215 25% 15% / 0.05), 0 2px 4px -2px hsl(215 25% 15% / 0.03);
-    --shadow-lg: 0 10px 15px -3px hsl(215 25% 15% / 0.05), 0 4px 6px -4px hsl(215 25% 15% / 0.03);
-    --shadow-card: 0 1px 3px 0 hsl(215 25% 15% / 0.04), 0 1px 2px -1px hsl(215 25% 15% / 0.04);
+    /* Multi-layered shadows for premium feel */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+    --shadow-card: 0 2px 12px -2px rgb(0 0 0 / 0.06), 0 0 0 1px rgb(0 0 0 / 0.03);
 
     /* Sidebar */
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 215 25% 35%;
-    --sidebar-primary: 199 89% 48%;
+    --sidebar-background: 210 30% 99.5%;
+    --sidebar-foreground: 215 30% 25%;
+    --sidebar-primary: 196 90% 35%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 199 89% 96%;
-    --sidebar-accent-foreground: 199 89% 35%;
-    --sidebar-border: 214 20% 94%;
-    --sidebar-ring: 199 89% 48%;
+    --sidebar-accent: 196 90% 96%;
+    --sidebar-accent-foreground: 196 90% 30%;
+    --sidebar-border: 210 20% 94%;
+    --sidebar-ring: 196 90% 35%;
   }
 
   .dark {
-    /* Elegant dark theme with depth */
-    --background: 225 25% 6%;
-    --foreground: 210 40% 96%;
+    /* Ultimate Dark Mode - Depth & Contrast */
+    --background: 220 33% 3.5%;
+    --foreground: 210 40% 98%;
 
-    --card: 225 25% 8%;
-    --card-foreground: 210 40% 96%;
+    --card: 220 33% 5.5%;
+    --card-foreground: 210 40% 98%;
 
-    --popover: 225 30% 10%;
-    --popover-foreground: 210 40% 96%;
+    --popover: 220 33% 7%;
+    --popover-foreground: 210 40% 98%;
 
-    /* Refined teal primary for dark mode */
-    --primary: 192 85% 55%;
-    --primary-foreground: 225 25% 6%;
-    --primary-light: 192 50% 12%;
-    --primary-medium: 192 70% 40%;
+    /* Vibrant Teal for Dark Mode */
+    --primary: 188 90% 48%;
+    --primary-foreground: 220 33% 3.5%;
+    --primary-light: 188 60% 10%;
+    --primary-medium: 188 80% 35%;
 
-    --secondary: 225 20% 12%;
-    --secondary-foreground: 210 30% 85%;
+    --secondary: 220 25% 10%;
+    --secondary-foreground: 210 30% 90%;
 
-    --muted: 225 20% 12%;
-    --muted-foreground: 220 15% 55%;
+    --muted: 220 25% 10%;
+    --muted-foreground: 217.2 32.6% 65%;
 
-    --accent: 192 40% 14%;
-    --accent-foreground: 192 80% 70%;
+    --accent: 188 50% 10%;
+    --accent-foreground: 188 90% 70%;
 
-    /* Softer status colors for dark mode */
-    --success: 158 55% 50%;
-    --success-light: 158 40% 12%;
-    --success-foreground: 158 55% 85%;
+    /* Refined Dark Mode Status */
+    --success: 158 75% 45%;
+    --success-light: 158 50% 8%;
+    --success-foreground: 158 75% 90%;
 
-    --warning: 40 85% 55%;
-    --warning-light: 40 40% 12%;
-    --warning-foreground: 40 85% 85%;
+    --warning: 42 95% 48%;
+    --warning-light: 42 50% 8%;
+    --warning-foreground: 42 95% 90%;
 
-    --destructive: 0 65% 55%;
-    --destructive-light: 0 40% 12%;
+    --destructive: 0 85% 55%;
+    --destructive-light: 0 50% 8%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 225 20% 14%;
-    --input: 225 20% 14%;
-    --ring: 192 85% 55%;
+    --border: 220 25% 12%;
+    --input: 220 25% 12%;
+    --ring: 188 90% 48%;
 
-    /* Elegant shadows for dark mode */
-    --shadow-sm: 0 1px 2px 0 hsl(225 50% 3% / 0.3);
-    --shadow-md: 0 4px 6px -1px hsl(225 50% 3% / 0.4), 0 2px 4px -2px hsl(225 50% 3% / 0.3);
-    --shadow-lg: 0 10px 15px -3px hsl(225 50% 3% / 0.4), 0 4px 6px -4px hsl(225 50% 3% / 0.3);
-    --shadow-card: 0 2px 8px 0 hsl(225 50% 3% / 0.3), 0 0 0 1px hsl(225 20% 14% / 0.5);
+    /* Deep shadows for OLED screens */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.5);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.6), 0 2px 4px -2px rgb(0 0 0 / 0.5);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.7), 0 4px 6px -4px rgb(0 0 0 / 0.6);
+    --shadow-card: 0 4px 20px -5px rgb(0 0 0 / 0.8), 0 0 0 1px rgb(255 255 255 / 0.05);
 
-    --sidebar-background: 225 25% 7%;
-    --sidebar-foreground: 210 30% 75%;
-    --sidebar-primary: 192 85% 55%;
-    --sidebar-primary-foreground: 225 25% 6%;
-    --sidebar-accent: 192 40% 14%;
-    --sidebar-accent-foreground: 192 80% 70%;
-    --sidebar-border: 225 20% 14%;
-    --sidebar-ring: 192 85% 55%;
+    --sidebar-background: 220 33% 4.5%;
+    --sidebar-foreground: 210 30% 85%;
+    --sidebar-primary: 188 90% 48%;
+    --sidebar-primary-foreground: 220 33% 3.5%;
+    --sidebar-accent: 188 50% 10%;
+    --sidebar-accent-foreground: 188 90% 70%;
+    --sidebar-border: 220 25% 10%;
+    --sidebar-ring: 188 90% 48%;
   }
 }
 
@@ -136,7 +136,12 @@
     @apply bg-background text-foreground font-sans antialiased;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-display;
   }
 }
@@ -153,6 +158,18 @@
   .shadow-elevated {
     box-shadow: var(--shadow-lg);
   }
+
+  .glass-panel {
+    @apply bg-card/60 backdrop-blur-xl border-border/50;
+  }
+
+  .premium-gradient {
+    @apply bg-gradient-to-br from-card via-card to-secondary/30;
+  }
+
+  .dark .premium-gradient {
+    @apply bg-gradient-to-br from-card via-card to-primary/5;
+  }
 }
 
 /* Smooth animations */
@@ -161,6 +178,7 @@
     opacity: 0;
     transform: translateY(8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -172,6 +190,7 @@
     opacity: 0;
     transform: translateX(16px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -179,9 +198,12 @@
 }
 
 @keyframes pulse-soft {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.7;
   }
@@ -200,8 +222,22 @@
 }
 
 /* Staggered animations */
-.stagger-1 { animation-delay: 0.05s; }
-.stagger-2 { animation-delay: 0.1s; }
-.stagger-3 { animation-delay: 0.15s; }
-.stagger-4 { animation-delay: 0.2s; }
-.stagger-5 { animation-delay: 0.25s; }
+.stagger-1 {
+  animation-delay: 0.05s;
+}
+
+.stagger-2 {
+  animation-delay: 0.1s;
+}
+
+.stagger-3 {
+  animation-delay: 0.15s;
+}
+
+.stagger-4 {
+  animation-delay: 0.2s;
+}
+
+.stagger-5 {
+  animation-delay: 0.25s;
+}

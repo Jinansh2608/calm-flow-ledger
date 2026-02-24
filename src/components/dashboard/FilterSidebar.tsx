@@ -14,18 +14,18 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { useDashboard, clients, projects, vendors, statuses } from "@/contexts/DashboardContext";
+import { useDashboard } from "@/contexts/DashboardContext";
 import { cn } from "@/lib/utils";
 
 const FilterSidebar = () => {
-  const { filters, setFilters, applyFilters, resetFilters, isFiltered } = useDashboard();
+  const { filters, setFilters, applyFilters, resetFilters, isFiltered, clients, projects, vendors, statuses } = useDashboard();
 
   const updateFilter = (key: keyof typeof filters, value: string) => {
     setFilters({ ...filters, [key]: value });
   };
 
   return (
-    <aside className="w-72 border-r bg-sidebar p-4 flex flex-col h-screen sticky top-0">
+    <aside className="w-72 border-r bg-sidebar p-4 flex flex-col h-screen sticky top-0 glass-panel premium-gradient">
       <div className="flex items-center justify-between mb-6 pb-4 border-b">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
@@ -59,7 +59,7 @@ const FilterSidebar = () => {
                 <SelectContent>
                   <SelectItem value="all">All Clients</SelectItem>
                   {clients.map((client) => (
-                    <SelectItem key={client} value={client}>{client}</SelectItem>
+                    <SelectItem key={client.id} value={client.name}>{client.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -74,7 +74,7 @@ const FilterSidebar = () => {
                 <SelectContent>
                   <SelectItem value="all">All Projects</SelectItem>
                   {projects.map((project) => (
-                    <SelectItem key={project} value={project}>{project}</SelectItem>
+                    <SelectItem key={project.id} value={project.name}>{project.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -131,7 +131,7 @@ const FilterSidebar = () => {
                 <SelectContent>
                   <SelectItem value="all">All Vendors</SelectItem>
                   {vendors.map((vendor) => (
-                    <SelectItem key={vendor} value={vendor}>{vendor}</SelectItem>
+                    <SelectItem key={vendor.id} value={vendor.name}>{vendor.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

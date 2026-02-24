@@ -1,0 +1,202 @@
+{
+  "upload_file": [
+    "file_hash",
+    "mime_type",
+    "session_id",
+    "original_mime_type",
+    "status",
+    "compressed_hash",
+    "storage_filename",
+    "uploaded_by",
+    "storage_path",
+    "compressed_size",
+    "is_compressed",
+    "file_size",
+    "po_number",
+    "upload_timestamp",
+    "id",
+    "metadata",
+    "original_filename"
+  ],
+  "client_po": [
+    "vendor_gstin",
+    "po_type",
+    "agreement_date",
+    "client_id",
+    "parent_po_id",
+    "site_id",
+    "igst",
+    "sgst",
+    "total_tax",
+    "vendor_address",
+    "cgst",
+    "bill_to_gstin",
+    "notes",
+    "po_date",
+    "bill_to_address",
+    "pi_date",
+    "po_value",
+    "status",
+    "store_id",
+    "created_at",
+    "receivable_amount",
+    "project_id",
+    "pi_number",
+    "ship_to_address",
+    "id",
+    "vendor_id",
+    "subtotal",
+    "po_number"
+  ],
+  "project": [
+    "name",
+    "country",
+    "city",
+    "status",
+    "id",
+    "location",
+    "state",
+    "created_at",
+    "longitude",
+    "latitude",
+    "client_id"
+  ],
+  "site": [
+    "address",
+    "id",
+    "site_name",
+    "postal_code",
+    "created_at",
+    "state",
+    "city",
+    "store_id"
+  ],
+  "upload_stats": [
+    "session_id",
+    "total_size_bytes",
+    "last_activity",
+    "total_uploads",
+    "id",
+    "total_downloads"
+  ],
+  "client_po_line_item": [
+    "unit",
+    "total_price",
+    "id",
+    "quantity",
+    "rate",
+    "hsn_code",
+    "item_name",
+    "gst_amount",
+    "client_po_id",
+    "gross_amount",
+    "unit_price"
+  ],
+  "vendor": [
+    "phone",
+    "contact_person",
+    "id",
+    "gstin",
+    "email",
+    "payment_terms",
+    "address",
+    "name",
+    "status",
+    "updated_at",
+    "created_at"
+  ],
+  "vendor_payment": [
+    "vendor_id",
+    "payment_date",
+    "status",
+    "vendor_order_id",
+    "created_at",
+    "amount",
+    "id"
+  ],
+  "client_payment": [
+    "received_by_account",
+    "payment_date",
+    "reference_number",
+    "tds_amount",
+    "notes",
+    "client_id",
+    "is_tds_deducted",
+    "payment_stage",
+    "created_at",
+    "client_po_id",
+    "transaction_type",
+    "id",
+    "amount",
+    "status",
+    "payment_mode"
+  ],
+  "billing_po": [
+    "status",
+    "client_id",
+    "po_number",
+    "id",
+    "amount",
+    "created_at"
+  ],
+  "billing_po_line_item": [
+    "unit_price",
+    "billing_po_id",
+    "created_at",
+    "item_description",
+    "id",
+    "quantity",
+    "amount"
+  ],
+  "vendor_order_line_item": [
+    "amount",
+    "quantity",
+    "id",
+    "item_description",
+    "created_at",
+    "vendor_order_id",
+    "unit_price"
+  ],
+  "vendor_order": [
+    "created_at",
+    "amount",
+    "id",
+    "po_number",
+    "vendor_id",
+    "status"
+  ],
+  "upload_session": [
+    "metadata",
+    "session_id",
+    "created_at",
+    "last_activity",
+    "expires_at",
+    "id",
+    "status"
+  ],
+  "project_document": [
+    "id",
+    "document_path",
+    "document_name",
+    "project_id",
+    "created_at"
+  ],
+  "payment_vendor_link": [
+    "vendor_order_id",
+    "amount_allocated",
+    "id",
+    "vendor_payment_id",
+    "created_at"
+  ],
+  "po_project_mapping": [
+    "id",
+    "created_at",
+    "project_id",
+    "client_po_id"
+  ],
+  "client": [
+    "name",
+    "id",
+    "created_at"
+  ]
+}

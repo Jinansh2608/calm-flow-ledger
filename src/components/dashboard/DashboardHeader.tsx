@@ -1,10 +1,14 @@
-import { Bell, Search, User, Settings } from "lucide-react";
+import { Bell, Search, User, Settings, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import NewOrderDialog from "./NewOrderDialog";
+import { EndpointSettings } from "./EndpointSettings";
+import { useAuth } from "@/contexts/AuthContext";
 
 const DashboardHeader = () => {
+  const { logout, user } = useAuth();
+  
   return (
     <header className="h-16 border-b bg-card/80 backdrop-blur-sm sticky top-0 z-50 flex items-center justify-between px-6">
       <div className="flex items-center gap-4">
@@ -36,13 +40,17 @@ const DashboardHeader = () => {
           </span>
         </Button>
 
-        <Button variant="ghost" size="icon">
-          <Settings className="h-4 w-4 text-muted-foreground" />
-        </Button>
+        <EndpointSettings />
 
-        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center cursor-pointer hover:bg-primary/20 transition-colors">
+        <div className="flex items-center gap-2 h-8 px-3 rounded-full bg-primary/10 border border-primary/20">
           <User className="h-4 w-4 text-primary" />
+          <span className="text-sm font-medium text-primary hidden md:inline-block">
+            {user?.username || "User"}
+          </span>
         </div>
+        <Button variant="ghost" size="icon" onClick={() => logout()} title="Logout" className="text-destructive hover:bg-destructive/10 hover:text-destructive">
+          <LogOut className="h-4 w-4" />
+        </Button>
       </div>
     </header>
   );
