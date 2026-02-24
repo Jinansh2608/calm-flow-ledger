@@ -167,23 +167,23 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
   // Derive project ID safely from various possible sources, including name lookup
   const currentProjectId = (() => {
     // 1. Direct project_id from fetched PO data
-    const fromPoData = poData?.project_id;
-    if (fromPoData && fromPoData > 0) return fromPoData;
+    const fromPoData = poData?.project_id || (poData as any)?.projectId;
+    if (fromPoData && Number(fromPoData) > 0) return Number(fromPoData);
     
     // 2. From the original prop data
     const fromDataProjectId = (data as any)?.projectId || (data as any)?.project_id;
-    if (fromDataProjectId && fromDataProjectId > 0) return fromDataProjectId;
+    if (fromDataProjectId && Number(fromDataProjectId) > 0) return Number(fromDataProjectId);
 
     // 2b. From nested project object in prop data
     const fromNestedProject = (data as any)?.project?.id || (data as any)?.project?.projectId;
-    if (fromNestedProject && fromNestedProject > 0) return fromNestedProject;
+    if (fromNestedProject && Number(fromNestedProject) > 0) return Number(fromNestedProject);
     
     // 3. From multi-PO data
     if (multiPoData && multiPoData.length > 0) {
-      const fromMulti = multiPoData.find(p => (p.project_id || (p as any).projectId) > 0);
+      const fromMulti = multiPoData.find(p => (Number(p.project_id) || Number((p as any).projectId)) > 0);
       if (fromMulti) {
           const foundId = (fromMulti.project_id || (fromMulti as any).projectId);
-          if (foundId > 0) return foundId;
+          if (Number(foundId) > 0) return Number(foundId);
       }
     }
     
@@ -192,25 +192,13 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
     if (rawProjectName && projects && projects.length > 0) {
       const targetName = String(rawProjectName).trim().toLowerCase();
       const matchedProject = projects.find(p => p.name && p.name.trim().toLowerCase() === targetName);
-      if (matchedProject?.id) return matchedProject.id;
+      if (matchedProject?.id) return Number(matchedProject.id);
     }
 
     // 5. From _original bundle data  
     const originalProjectId = (data as any)?._original?.project_id || (data as any)?._original?.projectId;
-    if (originalProjectId && originalProjectId > 0) return originalProjectId;
+    if (originalProjectId && Number(originalProjectId) > 0) return Number(originalProjectId);
     
-    // Log failure for debugging
-    if (open) {
-        console.warn("[DetailDrawer] Project ID resolution failed:", {
-            poDataProjectId: poData?.project_id,
-            dataProjectId: (data as any)?.projectId,
-            dataProject_id: (data as any)?.project_id,
-            projectName: rawProjectName,
-            availableProjectsCount: projects?.length,
-            multiPoDataCount: multiPoData?.length
-        });
-    }
-
     return 0;
   })();
 
@@ -736,9 +724,9 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
                   <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
                   <div className="flex flex-col">
                     <span className="text-lg font-black text-foreground/80 tracking-tight leading-none">
-                      {projects.find(p => p.id === currentProjectId)?.name || poData.project_name || (data as any)?.project || (data as any)?.project_name || `Project #${poData.project_id || 'Unlinked'}`}
+                      {projects.find(p => Number(p.id) === Number(currentProjectId))?.name || poData.project_name || (data as any)?.project || (data as any)?.project_name || `Project #${poData.project_id || 'Unlinked'}`}
                     </span>
-                    {projects.find(p => p.id === currentProjectId)?.name && projects.find(p => p.id === currentProjectId)?.name !== (poData.project_name || (data as any)?.project || (data as any)?.project_name) && (
+                    {projects.find(p => Number(p.id) === Number(currentProjectId))?.name && projects.find(p => Number(p.id) === Number(currentProjectId))?.name !== (poData.project_name || (data as any)?.project || (data as any)?.project_name) && (
                       <span className="text-[10px] text-primary/70 font-black uppercase tracking-widest mt-0.5">
                         {poData.project_name || (data as any)?.project || (data as any)?.project_name}
                       </span>
@@ -910,9 +898,9 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
                                                         {(currentProjectId === 0 || !currentProjectId) && (
                                                             <AlertCircle className="h-3 w-3 text-amber-500" />
                                                         )}
-                                                        <span>{projects.find(p => p.id === currentProjectId)?.name || poData.project_name || (currentProjectId === 0 ? 'Not Linked to Project' : 'Generic Project')}</span>
+                                                        <span>{projects.find(p => Number(p.id) === Number(currentProjectId))?.name || poData.project_name || (currentProjectId === 0 ? 'Not Linked to Project' : 'Generic Project')}</span>
                                                     </div>
-                                                    {projects.find(p => p.id === currentProjectId)?.name && projects.find(p => p.id === currentProjectId)?.name !== (poData.project_name || (data as any)?.project) && (
+                                                    {projects.find(p => Number(p.id) === Number(currentProjectId))?.name && projects.find(p => Number(p.id) === Number(currentProjectId))?.name !== (poData.project_name || (data as any)?.project) && (
                                                         <span className="text-[9px] text-primary/70 font-black uppercase tracking-widest">
                                                             {poData.project_name || (data as any)?.project}
                                                         </span>

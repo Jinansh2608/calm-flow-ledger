@@ -245,26 +245,26 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
         // Robustly resolve projectId: check bundle, po_details, and name-based lookup
         const projectId = (() => {
           // 1. Check main bundle property
-          if (bundle.project_id && bundle.project_id > 0) return bundle.project_id;
+          if (bundle.project_id && Number(bundle.project_id) > 0) return Number(bundle.project_id);
           
           // 2. Check individual PO details inside the bundle
           if (bundle.po_details && bundle.po_details.length > 0) {
             const fromDetail = bundle.po_details.find((d: any) => (d.project_id || d.projectId) > 0);
             const foundId = fromDetail ? (fromDetail.project_id || fromDetail.projectId) : 0;
-            if (foundId > 0) return foundId;
+            if (Number(foundId) > 0) return Number(foundId);
           }
           
           // 3. Name-based lookup fallback (case-insensitive & trimmed)
           if (bundle.project_name && projects.length > 0) {
             const targetName = bundle.project_name.trim().toLowerCase();
-            const matchedProject = projects.find(p => p.name.trim().toLowerCase() === targetName);
-            if (matchedProject?.id) return matchedProject.id;
+            const matchedProject = projects.find(p => p.name && p.name.trim().toLowerCase() === targetName);
+            if (matchedProject?.id) return Number(matchedProject.id);
           }
           
           return 0;
         })();
 
-        const project = projects.find(p => p.id === projectId);
+        const project = projects.find(p => Number(p.id) === Number(projectId));
         const totalValue = bundle.total_po_value || bundle.po_value || 0;
         const receivable = bundle.receivable_amount !== undefined ? bundle.receivable_amount : totalValue;
         

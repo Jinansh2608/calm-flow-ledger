@@ -35,10 +35,10 @@ export function PMLDialog({ open, onClose }: { open: boolean; onClose: () => voi
 
   const projectStats = (projects || []).map((project) => {
     const projectClientPOs = (filteredClientPOs || []).filter((po) =>
-      po.project === project.name || po.projectId === project.id || po.project_name === project.name
+      po.project === project.name || Number(po.projectId) === Number(project.id) || po.project_name === project.name
     );
 
-    const projectVendorPOs = (filteredVendorPOs || []).filter((vpo) => vpo.projectId === project.id);
+    const projectVendorPOs = (filteredVendorPOs || []).filter((vpo) => Number(vpo.projectId) === Number(project.id));
 
     const projectPayments = (filteredPayments || []).filter((p) => {
       const paymentPO = (filteredClientPOs || []).find((po) =>
