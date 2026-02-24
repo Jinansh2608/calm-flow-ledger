@@ -54,6 +54,8 @@ export interface ClientPO {
     icon: string;
   };
   systemProjectName?: string; // Name from our system
+  store_id?: string; // Original Store ID
+  storeId?: string; // Alias for consistency
 }
 
 export interface VendorPO {
@@ -327,6 +329,8 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
           po_ids: bundle.po_ids || (bundle.id ? [bundle.id] : []),
           badge: bundle.badge,
           systemProjectName: project ? project.name : undefined,
+          store_id: bundle.store_id,
+          storeId: bundle.store_id || bundle.display_identifier,
           _original: bundle 
         };
       });

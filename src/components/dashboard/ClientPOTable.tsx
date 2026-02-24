@@ -185,7 +185,7 @@ const ClientPOTable = ({ onSelectPO }: ClientPOTableProps) => {
             <TableHeader>
               <TableRow className="hover:bg-transparent border-b border-border/30">
                 <TableHead className="py-3.5 pl-7 text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em]">Client</TableHead>
-                <TableHead className="py-3.5 text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em]">Project</TableHead>
+                <TableHead className="py-3.5 text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em]">Project Name</TableHead>
                 <TableHead className="py-3.5 text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em]">PO Number</TableHead>
                 <TableHead className="py-3.5 text-right text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em]">PO Value</TableHead>
                 <TableHead className="py-3.5 text-right text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em]">Outstanding</TableHead>
@@ -219,19 +219,19 @@ const ClientPOTable = ({ onSelectPO }: ClientPOTableProps) => {
                       </div>
                     </TableCell>
 
-                    {/* Project */}
+                    {/* Project Name */}
                     <TableCell className="py-5">
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-2">
                           <div className={statusDotColor(po.status)} />
                           <span className="font-bold text-foreground text-[13px] leading-tight tracking-tight max-w-[200px] truncate">
-                            {po.systemProjectName || po.project}
+                            {po.systemProjectName || po.project || 'No Project'}
                           </span>
                         </div>
                         <div className="flex flex-col gap-0.5 ml-3.5">
-                          {po.systemProjectName && po.systemProjectName !== po.project && (
+                          {po.storeId && (po.storeId !== (po.systemProjectName || po.project)) && (
                             <span className="text-[10px] text-primary/80 font-black uppercase tracking-widest">
-                              {po.project}
+                               {po.storeId}
                             </span>
                           )}
                           <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-medium">

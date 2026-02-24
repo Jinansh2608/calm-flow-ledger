@@ -1,0 +1,12 @@
+--- PROJECTS ---
+ID: 45, Name: 'abcd'
+ID: 44, Name: 'CMHNAS1697'
+ID: 43, Name: 'U27'
+ID: 42, Name: 'FY26'
+
+--- CLIENT POs (Last 20) ---
+ID: 143, PO: 'PENDING-1771787203757', ProjID: 45, ProjName: 'abcd', Client: 'Bajaj'
+ID: 142, PO: '4100133013', ProjID: 43, ProjName: 'U27', Client: 'Bajaj'
+ID: 141, PO: '4100130800', ProjID: 42, ProjName: 'FY26', Client: 'Bajaj'
+ID: 140, PO: 'PO01483', ProjID: 44, ProjName: 'CMHNAS1697', Client: 'Dava India'
+ID: 138, PO: '4100129938', ProjID: 42, ProjName: 'FY26', Client: 'Bajaj'
