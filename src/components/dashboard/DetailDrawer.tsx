@@ -734,9 +734,16 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
               <div className="flex items-center gap-4 mt-1">
                 <div className="flex items-center gap-1.5">
                   <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                  <span className="text-lg font-bold text-foreground/80 tracking-tight">
-                    {poData.project_name || (data as any)?.project || `Project #${poData.project_id || 'Unlinked'}`}
-                  </span>
+                  <div className="flex flex-col">
+                    <span className="text-lg font-black text-foreground/80 tracking-tight leading-none">
+                      {projects.find(p => p.id === currentProjectId)?.name || poData.project_name || (data as any)?.project || (data as any)?.project_name || `Project #${poData.project_id || 'Unlinked'}`}
+                    </span>
+                    {projects.find(p => p.id === currentProjectId)?.name && projects.find(p => p.id === currentProjectId)?.name !== (poData.project_name || (data as any)?.project || (data as any)?.project_name) && (
+                      <span className="text-[10px] text-primary/70 font-black uppercase tracking-widest mt-0.5">
+                        {poData.project_name || (data as any)?.project || (data as any)?.project_name}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="h-4 w-px bg-border mx-1" />
                 <span className="text-sm font-medium text-muted-foreground">
@@ -898,11 +905,18 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
                                                     </div>
                                                     <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Project Name</span>
                                                 </div>
-                                                <span className="text-sm font-black text-foreground flex items-center gap-2">
-                                                    {(currentProjectId === 0 || !currentProjectId) && (
-                                                        <AlertCircle className="h-3 w-3 text-amber-500" />
+                                                <span className="text-sm font-black text-foreground flex flex-col items-end gap-0.5">
+                                                    <div className="flex items-center gap-2">
+                                                        {(currentProjectId === 0 || !currentProjectId) && (
+                                                            <AlertCircle className="h-3 w-3 text-amber-500" />
+                                                        )}
+                                                        <span>{projects.find(p => p.id === currentProjectId)?.name || poData.project_name || (currentProjectId === 0 ? 'Not Linked to Project' : 'Generic Project')}</span>
+                                                    </div>
+                                                    {projects.find(p => p.id === currentProjectId)?.name && projects.find(p => p.id === currentProjectId)?.name !== (poData.project_name || (data as any)?.project) && (
+                                                        <span className="text-[9px] text-primary/70 font-black uppercase tracking-widest">
+                                                            {poData.project_name || (data as any)?.project}
+                                                        </span>
                                                     )}
-                                                    {poData.project_name || (currentProjectId === 0 ? 'Not Linked to Project' : 'Generic Project')}
                                                 </span>
                                             </div>
                                             {(currentProjectId === 0 || !currentProjectId) && (

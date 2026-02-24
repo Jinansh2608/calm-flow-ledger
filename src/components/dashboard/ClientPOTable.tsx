@@ -225,12 +225,19 @@ const ClientPOTable = ({ onSelectPO }: ClientPOTableProps) => {
                         <div className="flex items-center gap-2">
                           <div className={statusDotColor(po.status)} />
                           <span className="font-bold text-foreground text-[13px] leading-tight tracking-tight max-w-[200px] truncate">
-                            {po.project}
+                            {po.systemProjectName || po.project}
                           </span>
                         </div>
-                        <div className="flex items-center gap-1 text-[10px] text-muted-foreground ml-3.5 font-medium">
-                          <FileText className="h-2.5 w-2.5" />
-                          <span>ID: {po.projectId || '—'}</span>
+                        <div className="flex flex-col gap-0.5 ml-3.5">
+                          {po.systemProjectName && po.systemProjectName !== po.project && (
+                            <span className="text-[10px] text-primary/80 font-black uppercase tracking-widest">
+                              {po.project}
+                            </span>
+                          )}
+                          <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-medium">
+                            <FileText className="h-2.5 w-2.5" />
+                            <span>ID: {po.projectId || '—'}</span>
+                          </div>
                         </div>
                       </div>
                     </TableCell>
