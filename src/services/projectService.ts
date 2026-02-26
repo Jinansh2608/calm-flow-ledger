@@ -3,9 +3,9 @@ import { Project, StandardResponse, FinancialSummary, BillingPO, BillingPODetail
 
 export const projectService = {
   // 1. Get All Projects
-  getAllProjects: async () => {
+  getAllProjects: async (bypassCache: boolean = false) => {
     try {
-      const response: any = await apiRequest<any>(`/projects?limit=1000`);
+      const response: any = await apiRequest<any>(`/projects?limit=1000`, { bypassCache } as any);
       // Handle multiple possible response structures
       let projects = [];
       if (response?.data?.projects) {

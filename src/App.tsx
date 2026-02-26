@@ -7,6 +7,8 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import CreateQuotation from "./pages/CreateQuotation";
+import ViewQuotation from "./pages/ViewQuotation";
 import { apiDiagnostics } from "@/services";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -32,6 +34,8 @@ const App = () => (
             <Routes>
               <Route path="/auth" element={<Auth />} />
               <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+              <Route path="/quotation/create" element={<ProtectedRoute><CreateQuotation /></ProtectedRoute>} />
+              <Route path="/quotation/view/:id" element={<ProtectedRoute><ViewQuotation /></ProtectedRoute>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

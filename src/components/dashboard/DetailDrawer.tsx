@@ -38,6 +38,8 @@ import { cn, formatCurrency } from "@/lib/utils";
 import { Payment, PurchaseOrder, VendorOrder } from "@/types";
 import { VendorOrderDialog } from "./VendorOrderDialog";
 import { VendorOrderDetails } from "./VendorOrderDetails"; // Import Details Component
+import QuotationTab from "./QuotationTab";
+import VendorMasterDialog from "./VendorMasterDialog";
 
 
 
@@ -82,6 +84,7 @@ interface LineItem {
   quantity: number;
   unit_price: number;
   amount: number;
+  notes?: string;
   created_at: string;
 }
 
@@ -213,6 +216,13 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
       fetchData(); // This will fetch fresh details and override poData if successful
     }
   }, [data]);
+
+  // If project ID was 0 but now is resolved, fetch vendor orders
+  useEffect(() => {
+    if (data && currentProjectId > 0 && vendorOrders.length === 0) {
+      fetchData();
+    }
+  }, [currentProjectId]);
   
 
   const fetchData = useCallback(async (forceRefresh: boolean = false) => {
@@ -223,8 +233,8 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
               const poIds = data.po_ids;
               
               const [detailsResults, lineItemsResults, paymentsResults] = await Promise.all([
-                  Promise.all(poIds.map(id => poService.getPODetails(id).catch(() => null))),
-                  Promise.all(poIds.map(id => poService.getLineItems(id).catch(() => []))),
+                  Promise.all(poIds.map(id => poService.getPODetails(id, forceRefresh).catch(() => null))),
+                  Promise.all(poIds.map(id => poService.getLineItems(id, forceRefresh).catch(() => []))),
                   Promise.all(poIds.map(id => poService.getPayments(id, forceRefresh).catch(() => ({ payments: [], summary: null }))))
               ]);
 
@@ -311,7 +321,7 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
                 const resolvedId = validPOs.length > 0 ? (validPOs[0].project_id || currentProjectId || (data as any)?.project_id || 0) : 0;
                 if (resolvedId > 0) {
                    try {
-                     const voResponse = await poService.getProjectVendorOrders(resolvedId);
+                     const voResponse = await poService.getProjectVendorOrders(resolvedId, forceRefresh);
                      setVendorOrders(voResponse);
                    } catch (voError) {
                      console.warn('Failed to fetch vendor orders:', voError);
@@ -328,7 +338,7 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
 
                 // 1. Fetch Full PO Details
                 try {
-                    const freshDetails = await poService.getPODetails(poId);
+                    const freshDetails = await poService.getPODetails(poId, forceRefresh);
                     if (freshDetails) {
                         const mappedId = freshDetails.project_id || (data as any).project_id || (data as any).projectId || 0;
                         setPoData(prev => prev ? ({ ...prev, ...freshDetails, project_id: mappedId }) : null);
@@ -348,7 +358,7 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
 
                 // 2. Fetch line items
                 try {
-                  const items = await poService.getLineItems(poId);
+                    const items = await poService.getLineItems(poId, forceRefresh);
                   if (Array.isArray(items)) {
                     setLineItems((items as unknown as APIResponseItem[]).map((i) => ({
                       id: i.id,
@@ -405,12 +415,17 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
                 // 4. Fetch Vendor Orders
                 if (resolvedProjectId > 0) {
                     try {
-                        const voResponse = await poService.getProjectVendorOrders(resolvedProjectId);
+                        console.log(`[DetailDrawer] Fetching vendor orders for project ${resolvedProjectId} (forceRefresh: ${forceRefresh})`);
+                        const voResponse = await poService.getProjectVendorOrders(resolvedProjectId, forceRefresh);
+                        console.log(`[DetailDrawer] Found ${voResponse.length} vendor orders for project ${resolvedProjectId}`, voResponse);
                         setVendorOrders(voResponse);
                     } catch (voError) {
                         console.warn('Failed to fetch vendor orders:', voError);
                         setVendorOrders([]);
                     }
+                } else {
+                    console.warn('[DetailDrawer] Cannot fetch vendor orders: project_id is 0');
+                    setVendorOrders([]);
                 }
               }
           }
@@ -544,30 +559,6 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
       setIsVendorOrderDetailsOpen(true);
   };
 
-  const handleAddVendorOrder = () => {
-      setSelectedVendorOrder(null);
-      setIsVendorOrderDialogOpen(true);
-  };
-
-  const handleEditVendorOrder = (order: VendorOrder) => {
-      setSelectedVendorOrder(order);
-      setIsVendorOrderDialogOpen(true);
-  };
-
-  const handleDeleteVendorOrder = async (orderId: number) => {
-      if (!data?.project_id) return;
-      if (!window.confirm("Are you sure you want to delete this vendor order?")) return;
-      try {
-          await poService.deleteVendorOrder(data.project_id, orderId);
-          toast({ title: "Success", description: "Vendor order deleted" });
-          // Refresh detail data and dashboard data
-          await Promise.all([fetchData(true), refreshData()]);
-      } catch (error) {
-          console.error("Delete VO error:", error);
-          toast({ title: "Error", description: "Failed to delete vendor order", variant: "destructive" });
-      }
-  };
-  
   // File Upload Handlers
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -673,10 +664,33 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
     }
   };
 
+  const handleAddVendorOrder = () => {
+      setSelectedVendorOrder(null);
+      setIsVendorOrderDialogOpen(true);
+  };
+
+  const handleEditVendorOrder = (order: VendorOrder) => {
+      setSelectedVendorOrder(order);
+      setIsVendorOrderDialogOpen(true);
+  };
+
   if (!poData) return null;
 
-  return (
-    <Sheet open={open} onOpenChange={onClose}>
+    const handleDeleteVendorOrder = async (orderId: number) => {
+        if (!confirm("Are you sure you want to delete this vendor order?")) return;
+        try {
+            await poService.deleteVendorOrder(currentProjectId, orderId);
+            toast({ title: "Deleted", description: "Vendor order has been removed." });
+            await fetchData(true);
+            await refreshData(true);
+        } catch (err) {
+            console.error("Delete VO error:", err);
+            toast({ title: "Error", description: "Failed to delete vendor order.", variant: "destructive" });
+        }
+    };
+
+    return (
+        <Sheet open={open} onOpenChange={(val) => !val && onClose()}>
       <SheetContent className="w-full sm:max-w-xl md:max-w-2xl lg:max-w-3xl xl:max-w-4xl p-0 flex flex-col h-full bg-background border-l shadow-2xl">
         <DialogTitle className="sr-only">Detailed View</DialogTitle>
         <DialogDescription className="sr-only">Detailed information and related data</DialogDescription>
@@ -771,7 +785,7 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
 
         {/* Content */}
         <Tabs defaultValue="details" className="flex-1 flex flex-col min-h-0">
-            <div className="px-8 border-b bg-card/30 shrink-0">
+            <div className="px-8 border-b bg-muted/20 backdrop-blur-sm shrink-0">
                 <TabsList className="h-14 bg-transparent p-0 gap-8">
                     <TabsTrigger 
                         value="details" 
@@ -792,11 +806,20 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
                         Payments
                     </TabsTrigger>
                     <TabsTrigger 
-                        value="vendor-orders" 
-                        className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs font-black uppercase tracking-widest transition-all hover:text-primary/70"
+                        value="vendor-master" 
+                        className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs font-black uppercase tracking-widest transition-all hover:text-indigo-500/70"
                     >
-                        Vendor Orders
+                        Master Orders
                     </TabsTrigger>
+                    {/* Quotation — Client 2 only */}
+                    {(poData?.client_id === 2 || data?.client_id === 2) && (
+                      <TabsTrigger 
+                          value="quotation" 
+                          className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-violet-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs font-black uppercase tracking-widest transition-all hover:text-violet-500/70"
+                      >
+                          Quotation
+                      </TabsTrigger>
+                    )}
                 </TabsList>
             </div>
             
@@ -816,14 +839,14 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
                                 </div>
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-sm">
-                                        <thead className="bg-muted/50 border-b">
+                                        <thead className="bg-muted/30 border-b border-border/50">
                                             <tr>
-                                                <th className="px-6 py-3 text-left font-black text-[10px] text-muted-foreground uppercase tracking-wider">PO Reference</th>
-                                                <th className="px-6 py-3 text-left font-black text-[10px] text-muted-foreground uppercase tracking-wider">Issue Date</th>
-                                                <th className="px-6 py-3 text-right font-black text-[10px] text-muted-foreground uppercase tracking-wider">Gross Value</th>
-                                                <th className="px-6 py-3 text-right font-black text-[10px] text-muted-foreground uppercase tracking-wider">Settled</th>
-                                                <th className="px-6 py-3 text-center font-black text-[10px] text-muted-foreground uppercase tracking-wider">Status</th>
-                                                <th className="px-6 py-3 text-right font-black text-[10px] text-muted-foreground uppercase tracking-wider">Control</th>
+                                                <th className="px-6 py-4 text-left font-black text-[10px] text-foreground/70 uppercase tracking-[0.2em]">PO Reference</th>
+                                                <th className="px-6 py-4 text-left font-black text-[10px] text-foreground/70 uppercase tracking-[0.2em]">Issue Date</th>
+                                                <th className="px-6 py-4 text-right font-black text-[10px] text-foreground/70 uppercase tracking-[0.2em]">Gross Value</th>
+                                                <th className="px-6 py-4 text-right font-black text-[10px] text-foreground/70 uppercase tracking-[0.2em]">Settled</th>
+                                                <th className="px-6 py-4 text-center font-black text-[10px] text-foreground/70 uppercase tracking-[0.2em]">Status</th>
+                                                <th className="px-6 py-4 text-right font-black text-[10px] text-foreground/70 uppercase tracking-[0.2em]">Control</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y">
@@ -880,9 +903,9 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
                             {/* Left Column: Key Info */}
                             <div className="space-y-8">
                                 <div className="bg-card rounded-2xl border shadow-sm overflow-hidden group">
-                                    <div className="bg-muted/50 px-5 py-3 border-b flex items-center justify-between">
-                                        <Label className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-black">Contract Identity</Label>
-                                        <Badge variant="outline" className="text-[9px] font-bold bg-background/50 h-5">Verified</Badge>
+                                    <div className="bg-muted/30 px-5 py-3 border-b border-border/50 flex items-center justify-between">
+                                        <Label className="text-[10px] text-foreground/70 uppercase tracking-[0.2em] font-black">Contract Identity</Label>
+                                        <Badge variant="outline" className="text-[9px] font-bold bg-background/50 h-5 border-border/50">Verified Record</Badge>
                                     </div>
                                     <div className="p-6 space-y-5">
                                         <div className="space-y-4">
@@ -891,7 +914,7 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
                                                     <div className="h-4 w-4 rounded-full bg-primary/10 flex items-center justify-center">
                                                         <Package className="h-2.5 w-2.5 text-primary" />
                                                     </div>
-                                                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Project Name</span>
+                                                    <span className="text-xs font-bold text-foreground/60 uppercase tracking-wider">Project Name</span>
                                                 </div>
                                                 <span className="text-sm font-black text-foreground flex flex-col items-end gap-0.5">
                                                     <div className="flex items-center gap-2">
@@ -928,7 +951,7 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
                                                     <div className="h-4 w-4 rounded-full bg-primary/10 flex items-center justify-center">
                                                         <Building2 className="h-2.5 w-2.5 text-primary" />
                                                     </div>
-                                                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Client Identity</span>
+                                                    <span className="text-xs font-bold text-foreground/60 uppercase tracking-wider">Client Identity</span>
                                                 </div>
                                                 <span className="text-sm font-black text-foreground">{poData.client_name || 'Individual'}</span>
                                             </div>
@@ -938,36 +961,36 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
                                                     <div className="h-4 w-4 rounded-full bg-primary/10 flex items-center justify-center">
                                                         <Clock className="h-2.5 w-2.5 text-primary" />
                                                     </div>
-                                                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Inclusion Date</span>
+                                                    <span className="text-xs font-bold text-foreground/60 uppercase tracking-wider">Inclusion Date</span>
                                                 </div>
                                                 <span className="text-sm font-black text-foreground">{poData.created_at ? new Date(poData.created_at).toLocaleDateString(undefined, { dateStyle: 'long' }) : '--'}</span>
                                             </div>
                                         </div>
 
                                         <div className="mt-6">
-                                            <Label className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-black mb-3 block">Internal Documentation</Label>
-                                            <div className="relative">
-                                                {isEditing ? (
-                                                    <Textarea 
-                                                        value={editedData?.notes || ''} 
-                                                        onChange={(e) => setEditedData(prev => prev ? {...prev, notes: e.target.value} : prev)} 
-                                                        placeholder="Record confidential notes, payment terms, or project caveats..."
-                                                        className="min-h-[140px] w-full bg-muted/20 border-primary/10 focus:border-primary/20 transition-all rounded-xl text-sm leading-relaxed"
-                                                    />
-                                                ) : (
-                                                    <div className="bg-muted/20 p-5 rounded-2xl border border-dashed border-muted-foreground/20 min-h-[140px] relative transition-all hover:border-primary/20 group">
-                                                        <p className="text-sm text-foreground/70 leading-relaxed whitespace-pre-wrap italic">
-                                                            {poData.notes || "No internal documentation has been added to this purchase order record yet."}
-                                                        </p>
-                                                        {poData.notes && (
-                                                           <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                              <Badge variant="outline" className="text-[8px] h-4">Read Only</Badge>
-                                                           </div>
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
+                                             <Label className="text-[10px] text-foreground/60 uppercase tracking-[0.2em] font-black mb-3 block">Internal Documentation</Label>
+                                             <div className="relative">
+                                                 {isEditing ? (
+                                                     <Textarea 
+                                                         value={editedData?.notes || ''} 
+                                                         onChange={(e) => setEditedData(prev => prev ? {...prev, notes: e.target.value} : prev)} 
+                                                         placeholder="Record confidential notes, payment terms, or project caveats..."
+                                                         className="min-h-[140px] w-full bg-muted/20 border-border/50 focus:border-primary/30 transition-all rounded-xl text-sm leading-relaxed"
+                                                     />
+                                                 ) : (
+                                                     <div className="bg-muted/10 p-5 rounded-2xl border border-dashed border-border transition-all hover:bg-muted/20 group">
+                                                         <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap italic font-medium">
+                                                             {poData.notes || "No internal documentation has been added to this purchase order record yet."}
+                                                         </p>
+                                                         {poData.notes && (
+                                                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                               <Badge variant="outline" className="text-[8px] h-4 bg-background">Read Only</Badge>
+                                                            </div>
+                                                         )}
+                                                     </div>
+                                                 )}
+                                             </div>
+                                         </div>
                                     </div>
                                 </div>
                             </div>
@@ -975,9 +998,9 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
                             {/* Right Column: Financials & Status */}
                             <div className="space-y-8">
                                  <div className="bg-card rounded-2xl border shadow-sm overflow-hidden group">
-                                    <div className="bg-muted/50 px-5 py-3 border-b flex items-center justify-between">
-                                        <Label className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-black">Project Status</Label>
-                                        <Badge className="text-[9px] font-bold bg-primary/10 text-primary border-primary/20 h-5">Live Lifecycle</Badge>
+                                    <div className="bg-muted/30 px-5 py-3 border-b border-border/50 flex items-center justify-between">
+                                        <Label className="text-[10px] text-foreground/70 uppercase tracking-[0.2em] font-black">Project Status</Label>
+                                        <Badge className="text-[9px] font-black uppercase tracking-tighter bg-primary/10 text-primary border-primary/20 h-5">Live Lifecycle</Badge>
                                     </div>
                                     <div className="p-6">
                                          <div className="flex flex-wrap gap-4">
@@ -1000,13 +1023,13 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
                                                     </Select>
                                                 ) : (
                                                     <div className={cn(
-                                                        "w-full h-11 flex items-center justify-center rounded-xl border-2 px-4",
-                                                        poData.status === 'active' ? "bg-blue-950/50 border-blue-700/30 text-blue-400 font-black" :
-                                                        poData.status === 'completed' ? "bg-emerald-950/50 border-emerald-700/30 text-emerald-400 font-black" :
-                                                        poData.status === 'cancelled' ? "bg-rose-950/50 border-rose-700/30 text-rose-400 font-black" :
-                                                        "bg-slate-800/50 border-slate-600/30 text-slate-400 font-black"
+                                                        "w-full h-11 flex items-center justify-center rounded-xl border-2 px-4 transition-all",
+                                                        poData.status === 'active' ? "bg-blue-500/10 border-blue-500/20 text-blue-700 dark:text-blue-400 font-black" :
+                                                        poData.status === 'completed' ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-black" :
+                                                        poData.status === 'cancelled' ? "bg-rose-500/10 border-rose-500/20 text-rose-700 dark:text-rose-400 font-black" :
+                                                        "bg-slate-500/10 border-slate-500/20 text-slate-700 dark:text-slate-400 font-black"
                                                     )}>
-                                                        <div className="flex items-center gap-2 text-xs uppercase tracking-widest">
+                                                        <div className="flex items-center gap-2 text-[10px] uppercase font-black tracking-[0.2em]">
                                                             <div className={cn("h-2 w-2 rounded-full", poData.status === 'active' ? "bg-blue-500 animate-pulse" : poData.status === 'completed' ? "bg-emerald-500" : "bg-rose-500")} />
                                                             {poData.status} Life Cycle
                                                         </div>
@@ -1017,12 +1040,12 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
                                             <div className="flex-1 space-y-2">
                                                 <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest pl-1">Financial State</span>
                                                 <div className={cn(
-                                                    "w-full h-11 flex items-center justify-center rounded-xl border-2 px-4",
-                                                    poData.payment_status === 'paid' ? "bg-emerald-950/50 border-emerald-700/30 text-emerald-400 font-black" :
-                                                    poData.payment_status === 'partially_paid' || poData.payment_status === 'partial' ? "bg-amber-950/50 border-amber-700/30 text-amber-400 font-black" :
-                                                    "bg-rose-950/50 border-rose-700/30 text-rose-400 font-black"
+                                                    "w-full h-11 flex items-center justify-center rounded-xl border-2 px-4 transition-all",
+                                                    poData.payment_status === 'paid' ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-black" :
+                                                    poData.payment_status === 'partially_paid' || poData.payment_status === 'partial' ? "bg-amber-500/10 border-amber-500/20 text-amber-700 dark:text-amber-400 font-black" :
+                                                    "bg-rose-500/10 border-rose-500/20 text-rose-700 dark:text-rose-400 font-black"
                                                 )}>
-                                                    <div className="flex items-center gap-2 text-xs uppercase tracking-widest">
+                                                    <div className="flex items-center gap-2 text-[10px] uppercase font-black tracking-[0.2em]">
                                                         <div className={cn("h-2 w-2 rounded-full", poData.payment_status === 'paid' ? "bg-emerald-500" : "bg-amber-500 animate-pulse")} />
                                                         {poData.payment_status ? (poData.payment_status === 'partially_paid' ? 'Partial Settlement' : poData.payment_status.toUpperCase()) : 'Not Started'}
                                                     </div>
@@ -1033,9 +1056,9 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
                                  </div>
 
                                  <div className="bg-card rounded-2xl border shadow-sm overflow-hidden group">
-                                     <div className="bg-muted/50 px-5 py-3 border-b flex items-center justify-between">
-                                         <Label className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-black">Financial Performance</Label>
-                                         <Badge variant="outline" className="text-[9px] font-bold bg-background/50 h-5">Real-time Data</Badge>
+                                     <div className="bg-muted/30 px-5 py-3 border-b border-border/50 flex items-center justify-between">
+                                         <Label className="text-[10px] text-foreground/70 uppercase tracking-[0.2em] font-black">Financial Performance</Label>
+                                         <Badge variant="outline" className="text-[9px] font-bold bg-background/50 h-5 border-border/50">Real-time Data</Badge>
                                      </div>
                                      
                                      <div className="p-6 space-y-6">
@@ -1069,12 +1092,12 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
                                                      )}
                                                  </div>
                                                  {isEditing && editedData?.po_value !== poData.po_value && editedData?.po_value !== undefined && (
-                                                    <span className="text-[10px] bg-amber-950/50 text-amber-400 border border-amber-800/30 px-2 py-0.5 rounded font-black uppercase mb-1">Pending Sync</span>
+                                                    <span className="text-[10px] bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded font-black uppercase mb-1">Pending Sync</span>
                                                  )}
                                              </div>
 
                                              <div className="grid grid-cols-2 gap-4">
-                                                 <div className="bg-emerald-500/[0.03] dark:bg-emerald-500/[0.05] border border-emerald-500/10 rounded-xl p-4 transition-all hover:bg-emerald-500/[0.05]">
+                                                 <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 transition-all hover:bg-emerald-500/20">
                                                      <div className="flex items-center gap-2 mb-1">
                                                          <div className="h-2 w-2 rounded-full bg-emerald-500" />
                                                          <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-widest">Received</span>
@@ -1082,16 +1105,16 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
                                                      <span className="text-xl font-black text-emerald-700 dark:text-emerald-400">{formatCurrency(poData.payment_amount || 0)}</span>
                                                  </div>
                                                  
-                                                 <div className="bg-rose-500/[0.03] dark:bg-rose-500/[0.05] border border-rose-500/10 rounded-xl p-4 transition-all hover:bg-rose-500/[0.05]">
+                                                 <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-4 transition-all hover:bg-rose-500/20">
                                                      <div className="flex items-center gap-2 mb-1">
                                                          <div className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
                                                          <span className="text-[10px] font-bold text-rose-700 dark:text-rose-400 uppercase tracking-widest">Outstanding</span>
                                                      </div>
                                                      <span className="text-xl font-black text-rose-700 dark:text-rose-400 tabular-nums">
                                                         {formatCurrency(Math.max(0, (poData.po_value || 0) - (poData.payment_amount || 0)))}
-                                                     </span>
-                                                 </div>
-                                             </div>
+                                                      </span>
+                                                  </div>
+                                              </div>
 
                                              {isEditing && editedData?.po_value !== poData.po_value && (
                                                <div className="bg-primary/5 dark:bg-primary/10 p-4 rounded-xl border border-primary/20 space-y-2 animate-in fade-in slide-in-from-top-2">
@@ -1143,13 +1166,13 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
                           {lineItems.length > 0 ? (
                               <div className="bg-card rounded-2xl border shadow-sm overflow-hidden transition-all hover:shadow-md">
                                   <table className="w-full text-sm">
-                                      <thead className="bg-muted/50 border-b">
+                                      <thead className="bg-muted/30 border-b border-border/50">
                                           <tr>
-                                              <th className="px-6 py-4 text-left font-black text-[10px] text-muted-foreground uppercase tracking-[0.2em]">Description</th>
-                                              <th className="px-6 py-4 text-center font-black text-[10px] text-muted-foreground uppercase tracking-[0.2em]">Qty</th>
-                                              <th className="px-6 py-4 text-right font-black text-[10px] text-muted-foreground uppercase tracking-[0.2em]">Unit Rate</th>
-                                              <th className="px-6 py-4 text-right font-black text-[10px] text-muted-foreground uppercase tracking-[0.2em]">Subtotal</th>
-                                              <th className="px-6 py-4 text-center font-black text-[10px] text-muted-foreground uppercase tracking-[0.2em]">Action</th>
+                                              <th className="px-6 py-4 text-left font-black text-[10px] text-foreground/70 uppercase tracking-[0.2em]">Description</th>
+                                              <th className="px-6 py-4 text-center font-black text-[10px] text-foreground/70 uppercase tracking-[0.2em]">Qty</th>
+                                              <th className="px-6 py-4 text-right font-black text-[10px] text-foreground/70 uppercase tracking-[0.2em]">Unit Rate</th>
+                                              <th className="px-6 py-4 text-right font-black text-[10px] text-foreground/70 uppercase tracking-[0.2em]">Subtotal</th>
+                                              <th className="px-6 py-4 text-center font-black text-[10px] text-foreground/70 uppercase tracking-[0.2em]">Action</th>
                                           </tr>
                                       </thead>
                                       <tbody className="divide-y">
@@ -1205,36 +1228,36 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
                               {/* Payment Summary Cards */}
                               {paymentSummary && (
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div className="bg-emerald-950/30 p-5 rounded-xl border border-emerald-800/30 hover:border-emerald-700/50 transition-all">
-                                        <div className="flex items-center justify-between mb-3">
-                                            <p className="text-[10px] font-black text-emerald-400/70 uppercase tracking-widest">Total Paid</p>
-                                            <div className="h-8 w-8 rounded-lg bg-emerald-500/15 flex items-center justify-center">
-                                              <TrendingUp className="h-4 w-4 text-emerald-400" />
-                                            </div>
-                                        </div>
-                                        <p className="text-2xl font-black text-emerald-400 tracking-tight">{formatCurrency(paymentSummary.total_paid)}</p>
-                                        <p className="text-xs text-emerald-500/60 mt-2 font-medium">{paymentSummary.cleared_count} cleared transactions</p>
-                                    </div>
-                                    <div className="bg-blue-950/30 p-5 rounded-xl border border-blue-800/30 hover:border-blue-700/50 transition-all">
-                                        <div className="flex items-center justify-between mb-3">
-                                            <p className="text-[10px] font-black text-blue-400/70 uppercase tracking-widest">Status</p>
-                                            <div className="h-8 w-8 rounded-lg bg-blue-500/15 flex items-center justify-center">
-                                              <CheckCircle2 className="h-4 w-4 text-blue-400" />
-                                            </div>
-                                        </div>
-                                        <p className="text-2xl font-black text-blue-400 tracking-tight">{paymentSummary.cleared_count}</p>
-                                        <p className="text-xs text-blue-500/60 mt-2 font-medium">cleared â€¢ {paymentSummary.pending_count} pending</p>
-                                    </div>
-                                    <div className="bg-amber-950/30 p-5 rounded-xl border border-amber-800/30 hover:border-amber-700/50 transition-all">
-                                        <div className="flex items-center justify-between mb-3">
-                                            <p className="text-[10px] font-black text-amber-400/70 uppercase tracking-widest">TDS Deducted</p>
-                                            <div className="h-8 w-8 rounded-lg bg-amber-500/15 flex items-center justify-center">
-                                              <DollarSign className="h-4 w-4 text-amber-400" />
-                                            </div>
-                                        </div>
-                                        <p className="text-2xl font-black text-amber-400 tracking-tight">{formatCurrency(paymentSummary.total_tds)}</p>
-                                        <p className="text-xs text-amber-500/60 mt-2 font-medium">from {paymentSummary.cleared_count + paymentSummary.pending_count || 0} transactions</p>
-                                    </div>
+                                     <div className="bg-emerald-500/10 p-5 rounded-xl border border-emerald-500/20 hover:border-emerald-500/30 transition-all">
+                                         <div className="flex items-center justify-between mb-3">
+                                             <p className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest">Total Paid</p>
+                                             <div className="h-8 w-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                                               <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                             </div>
+                                         </div>
+                                         <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">{formatCurrency(paymentSummary.total_paid)}</p>
+                                         <p className="text-xs text-muted-foreground mt-2 font-medium">{paymentSummary.cleared_count} cleared transactions</p>
+                                     </div>
+                                     <div className="bg-blue-500/10 p-5 rounded-xl border border-blue-500/20 hover:border-blue-500/30 transition-all">
+                                         <div className="flex items-center justify-between mb-3">
+                                             <p className="text-[10px] font-black text-blue-700 dark:text-blue-400 uppercase tracking-widest">Status</p>
+                                             <div className="h-8 w-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                                               <CheckCircle2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                             </div>
+                                         </div>
+                                         <p className="text-2xl font-black text-blue-600 dark:text-blue-400 tracking-tight">{paymentSummary.cleared_count}</p>
+                                         <p className="text-xs text-muted-foreground mt-2 font-medium">cleared • {paymentSummary.pending_count} pending</p>
+                                     </div>
+                                     <div className="bg-amber-500/10 p-5 rounded-xl border border-amber-500/20 hover:border-amber-500/30 transition-all">
+                                         <div className="flex items-center justify-between mb-3">
+                                             <p className="text-[10px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest">TDS Deducted</p>
+                                             <div className="h-8 w-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                                               <DollarSign className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                             </div>
+                                         </div>
+                                         <p className="text-2xl font-black text-amber-600 dark:text-amber-400 tracking-tight">{formatCurrency(paymentSummary.total_tds)}</p>
+                                         <p className="text-xs text-muted-foreground mt-2 font-medium">from {paymentSummary.cleared_count + paymentSummary.pending_count || 0} transactions</p>
+                                     </div>
                                 </div>
                               )}
 
@@ -1249,42 +1272,42 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
 
                                 return (
                                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div className="bg-emerald-950/20 p-5 rounded-xl border border-emerald-800/25 hover:border-emerald-700/40 transition-all">
+                                    <div className="bg-emerald-500/10 p-5 rounded-xl border border-emerald-500/20 hover:border-emerald-500/30 transition-all">
                                       <div className="flex items-center justify-between mb-3">
-                                        <p className="text-[10px] font-black text-emerald-400/60 uppercase tracking-widest">Total Income</p>
-                                        <div className="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                                          <ArrowUpRight className="h-4 w-4 text-emerald-400" />
+                                        <p className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest pl-1">Total Income</p>
+                                        <div className="h-8 w-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                                          <ArrowUpRight className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                                         </div>
                                       </div>
-                                      <p className="text-2xl font-black text-emerald-400 tracking-tight">{formatCurrency(creditTotal)}</p>
-                                      <p className="text-xs text-emerald-500/50 mt-2 font-medium">{creditCount} transaction{creditCount !== 1 ? 's' : ''}</p>
+                                      <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">{formatCurrency(creditTotal)}</p>
+                                      <p className="text-xs text-muted-foreground mt-2 font-medium">{creditCount} transaction{creditCount !== 1 ? 's' : ''}</p>
                                     </div>
-                                    <div className="bg-rose-950/20 p-5 rounded-xl border border-rose-800/25 hover:border-rose-700/40 transition-all">
+                                    <div className="bg-rose-500/10 p-5 rounded-xl border border-rose-500/20 hover:border-rose-500/30 transition-all">
                                       <div className="flex items-center justify-between mb-3">
-                                        <p className="text-[10px] font-black text-rose-400/60 uppercase tracking-widest">Total Expense</p>
-                                        <div className="h-8 w-8 rounded-lg bg-rose-500/10 flex items-center justify-center">
-                                          <ArrowDownLeft className="h-4 w-4 text-rose-400" />
+                                        <p className="text-[10px] font-black text-rose-700 dark:text-rose-400 uppercase tracking-widest pl-1">Total Expense</p>
+                                        <div className="h-8 w-8 rounded-lg bg-rose-500/20 flex items-center justify-center">
+                                          <ArrowDownLeft className="h-4 w-4 text-rose-600 dark:text-rose-400" />
                                         </div>
                                       </div>
-                                      <p className="text-2xl font-black text-rose-400 tracking-tight">{formatCurrency(debitTotal)}</p>
-                                      <p className="text-xs text-rose-500/50 mt-2 font-medium">{debitCount} transaction{debitCount !== 1 ? 's' : ''}</p>
+                                      <p className="text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tight">{formatCurrency(debitTotal)}</p>
+                                      <p className="text-xs text-muted-foreground mt-2 font-medium">{debitCount} transaction{debitCount !== 1 ? 's' : ''}</p>
                                     </div>
                                     <div className={cn(
                                       "p-5 rounded-xl border transition-all",
                                       isPositive 
-                                        ? "bg-blue-950/20 border-blue-800/25 hover:border-blue-700/40" 
-                                        : "bg-orange-950/20 border-orange-800/25 hover:border-orange-700/40"
+                                        ? "bg-blue-500/10 border-blue-500/20 hover:border-blue-500/30" 
+                                        : "bg-orange-500/10 border-orange-500/20 hover:border-orange-500/30"
                                     )}>
                                       <div className="flex items-center justify-between mb-3">
-                                        <p className={cn("text-[10px] font-black uppercase tracking-widest", isPositive ? "text-blue-400/60" : "text-orange-400/60")}>Net Cash Flow</p>
-                                        <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center", isPositive ? "bg-blue-500/10" : "bg-orange-500/10")}>
-                                          <TrendingUp className={cn("h-4 w-4", isPositive ? "text-blue-400" : "text-orange-400")} />
+                                        <p className={cn("text-[10px] font-black uppercase tracking-widest pl-1", isPositive ? "text-blue-700 dark:text-blue-400" : "text-orange-700 dark:text-orange-400")}>Net Cash Flow</p>
+                                        <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center", isPositive ? "bg-blue-500/20" : "bg-orange-500/20")}>
+                                          <TrendingUp className={cn("h-4 w-4", isPositive ? "text-blue-600 dark:text-blue-400" : "text-orange-600 dark:text-orange-400")} />
                                         </div>
                                       </div>
-                                      <p className={cn("text-2xl font-black tracking-tight", isPositive ? "text-blue-400" : "text-orange-400")}>
+                                      <p className={cn("text-2xl font-black tracking-tight", isPositive ? "text-blue-600 dark:text-blue-400" : "text-orange-600 dark:text-orange-400")}>
                                         {formatCurrency(net)}
                                       </p>
-                                      <p className={cn("text-xs mt-2 font-medium", isPositive ? "text-blue-500/50" : "text-orange-500/50")}>
+                                      <p className="text-xs text-muted-foreground mt-2 font-medium">
                                         {payments.length} total transactions
                                       </p>
                                     </div>
@@ -1328,13 +1351,13 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
                                                     <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                                                       <span className={cn(
                                                         "text-base font-bold tracking-tight",
-                                                        p.transaction_type === 'credit' ? "text-emerald-400" : p.transaction_type === 'debit' ? "text-rose-400" : "text-foreground"
+                                                        p.transaction_type === 'credit' ? "text-emerald-600 dark:text-emerald-400" : p.transaction_type === 'debit' ? "text-rose-600 dark:text-rose-400" : "text-foreground"
                                                       )}>
-                                                        {p.transaction_type === 'credit' ? '+' : p.transaction_type === 'debit' ? 'âˆ’' : ''}{formatCurrency(p.amount)}
+                                                        {p.transaction_type === 'credit' ? '+' : p.transaction_type === 'debit' ? '−' : ''}{formatCurrency(p.amount)}
                                                       </span>
                                                       <Badge className={cn(
                                                         "text-[10px] font-bold h-5 px-1.5 ml-auto rounded-md border",
-                                                        p.transaction_type === 'credit' ? "bg-emerald-500/15 text-emerald-400 border-emerald-700/30" : p.transaction_type === 'debit' ? "bg-rose-500/15 text-rose-400 border-rose-700/30" : "bg-muted text-muted-foreground border-border"
+                                                        p.transaction_type === 'credit' ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30" : p.transaction_type === 'debit' ? "bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/30" : "bg-muted text-muted-foreground border-border"
                                                       )}>
                                                         {p.transaction_type === 'credit' ? 'Income' : p.transaction_type === 'debit' ? 'Expense' : 'Other'}
                                                       </Badge>
@@ -1344,7 +1367,7 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
                                                         <Calendar className="h-3 w-3 text-muted-foreground/50" />
                                                         {p.payment_date}
                                                       </span>
-                                                      <span className="text-muted-foreground/30">â€¢</span>
+                                                      <span className="text-muted-foreground/30">•</span>
                                                       <span className="inline-flex items-center gap-1 capitalize">
                                                         <CreditCard className="h-3 w-3 text-muted-foreground/50" />
                                                         {p.payment_mode || 'neft'}
@@ -1363,13 +1386,13 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
                                                     )}
                                                     {p.notes && (
                                                       <p className="text-xs text-muted-foreground italic leading-relaxed">
-                                                        ðŸ’¬ {p.notes}
+                                                        💬 {p.notes}
                                                       </p>
                                                     )}
                                                     {p.is_tds_deducted && p.tds_amount && (
-                                                      <div className="flex items-center gap-2 bg-amber-950/30 px-3 py-2 rounded-lg border border-amber-800/30">
-                                                        <AlertCircle className="h-3.5 w-3.5 text-amber-400 flex-shrink-0" />
-                                                        <span className="text-xs font-semibold text-amber-400">TDS Deducted: â‚¹{p.tds_amount}</span>
+                                                      <div className="flex items-center gap-2 bg-amber-500/10 px-3 py-2 rounded-lg border border-amber-500/20">
+                                                        <AlertCircle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                                                        <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">TDS Deducted: ₹{p.tds_amount}</span>
                                                       </div>
                                                     )}
                                                   </div>
@@ -1385,9 +1408,9 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
                                                     <Badge 
                                                       className={cn(
                                                         "cursor-pointer font-bold text-[10px] px-2.5 py-0.5 h-6 flex items-center gap-1.5 transition-all hover:opacity-80 rounded-md border uppercase tracking-wider",
-                                                        (p.status === 'completed' || p.status === 'cleared') && "bg-emerald-950/40 text-emerald-400 border-emerald-700/40",
-                                                        p.status === 'pending' && "bg-blue-950/40 text-blue-400 border-blue-700/40",
-                                                        p.status === 'bounced' && "bg-rose-950/40 text-rose-400 border-rose-700/40"
+                                                        (p.status === 'completed' || p.status === 'cleared') && "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
+                                                        p.status === 'pending' && "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20",
+                                                        p.status === 'bounced' && "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20"
                                                       )}
                                                     >
                                                       {p.status === 'cleared' || p.status === 'completed' ? (
@@ -1436,94 +1459,144 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
                     </TabsContent>
 
 
-                    <TabsContent value="vendor-orders" className="mt-0 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                       <div className="space-y-6">
-                          <div className="flex justify-between items-center">
+                    <TabsContent value="vendor-master" className="mt-0 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      <div className="space-y-8">
+                        {/* Global Registry Access */}
+                        <div className="flex items-center justify-between p-6 bg-gradient-to-r from-indigo-500/5 to-violet-500/5 rounded-[2rem] border border-indigo-500/10">
                             <div>
-                                <h3 className="text-lg font-black text-foreground tracking-tight">Project Vendor Orders</h3>
-                                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Sub-contractors and resource allocations</p>
+                                <h3 className="font-black text-lg text-indigo-900 dark:text-indigo-300 tracking-tight">Master Order Registry</h3>
+                                <p className="text-xs text-indigo-600/60 font-bold uppercase tracking-widest mt-0.5">Project Procurement & Rate Configuration</p>
                             </div>
-                            <Button size="sm" onClick={handleAddVendorOrder} className="bg-primary hover:bg-primary/90 font-bold px-4 rounded-xl shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95">
-                              <Plus className="h-4 w-4 mr-2" />
-                              Create Vendor Order
-                            </Button>
-                          </div>
+                            <VendorMasterDialog 
+                                projectId={currentProjectId}
+                                projectLineItems={lineItems}
+                                onSuccess={async () => {
+                                    await fetchData(true);
+                                    await refreshData(true);
+                                }}
+                            />
+                        </div>
 
-                          {vendorOrders.length > 0 ? (
-                              <div className="bg-card rounded-2xl border shadow-sm overflow-hidden transition-all hover:shadow-md">
-                                  <table className="w-full text-sm">
-                                      <thead className="bg-muted/50 border-b">
-                                          <tr>
-                                              <th className="px-6 py-4 text-left font-black text-[10px] text-muted-foreground uppercase tracking-[0.2em]">VO Number</th>
-                                              <th className="px-6 py-4 text-left font-black text-[10px] text-muted-foreground uppercase tracking-[0.2em]">Scope of Work</th>
-                                              <th className="px-6 py-4 text-center font-black text-[10px] text-muted-foreground uppercase tracking-[0.2em]">Status</th>
-                                              <th className="px-6 py-4 text-right font-black text-[10px] text-muted-foreground uppercase tracking-[0.2em]">Order Value</th>
-                                              <th className="px-6 py-4 text-right font-black text-[10px] text-muted-foreground uppercase tracking-[0.2em]">Actions</th>
-                                          </tr>
-                                      </thead>
-                                      <tbody className="divide-y">
-                                          {vendorOrders.map((order) => (
-                                              <tr key={order.id} className="group hover:bg-muted/20 transition-colors">
-                                                  <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                                                        <span className="font-black text-foreground">{order.po_number || `VO-${order.id}`}</span>
-                                                    </div>
-                                                  </td>
-                                                  <td className="px-6 py-4">
-                                                    <p className="text-muted-foreground font-medium max-w-[250px] truncate leading-relaxed">
-                                                        {order.description || <span className="text-[10px] uppercase italic text-muted-foreground/50">No scope defined</span>}
-                                                    </p>
-                                                  </td>
-                                                  <td className="px-6 py-4 text-center">
-                                                      <Badge variant="outline" className={cn(
-                                                          "text-[9px] h-5 px-2 font-black uppercase tracking-tighter rounded-md",
-                                                          order.work_status === 'completed' ? "bg-emerald-50 text-emerald-700 border-emerald-100" : 
-                                                          order.work_status === 'in_progress' ? "bg-blue-50 text-blue-700 border-blue-100" : 
-                                                          "bg-muted/50 text-muted-foreground border-border"
-                                                      )}>
-                                                        {order.work_status || order.status}
-                                                      </Badge>
-                                                  </td>
-                                                  <td className="px-6 py-4 text-right font-black text-foreground">{formatCurrency(order.amount)}</td>
-                                                  <td className="px-6 py-4 text-right">
-                                                    <div className="flex justify-end gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/5" onClick={() => handleViewVendorOrder(order)}>
-                                                            <Eye className="h-4 w-4" />
-                                                        </Button>
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/5" onClick={() => handleEditVendorOrder(order)}>
-                                                            <Edit className="h-4 w-4" />
-                                                        </Button>
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-destructive/40 hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeleteVendorOrder(order.id)}>
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
-                                                    </div>
-                                                  </td>
-                                              </tr>
-                                          ))}
-                                          <tr className="bg-muted/5 border-t-2">
-                                            <td colSpan={3} className="px-6 py-5 text-right font-black text-[10px] text-muted-foreground uppercase tracking-widest">Total Outflow</td>
-                                            <td className="px-6 py-5 text-right font-black text-lg text-foreground tracking-tighter">{formatCurrency(vendorOrders.reduce((sum, order) => sum + (order.amount || 0), 0))}</td>
-                                            <td></td>
-                                          </tr>
-                                      </tbody>
-                                  </table>
-                              </div>
-                          ) : (
-                              <div className="flex flex-col items-center justify-center py-20 bg-card rounded-3xl border-2 border-dashed border-primary/10 transition-all hover:border-primary/30 group">
-                                  <div className="h-20 w-20 rounded-full bg-primary/5 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500">
-                                    <Building2 className="h-10 w-10 text-primary/40" />
-                                  </div>
-                                  <h4 className="text-lg font-black text-foreground tracking-tight">No Vendor Orders Linked</h4>
-                                  <p className="text-sm text-muted-foreground mt-2 mb-8 max-w-[300px] text-center font-medium">Outsource tasks or procure materials by creating orders for your registered vendors.</p>
-                                  <Button onClick={handleAddVendorOrder} variant="outline" className="rounded-xl border-primary/20 text-primary hover:bg-primary/5 font-bold px-6">
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    Create Vendor Allocation
-                                  </Button>
-                              </div>
-                          )}
-                       </div>
+                        {/* Project Specific Vendor Orders */}
+                        <div className="space-y-6">
+                            <div className="flex justify-between items-center px-2">
+                                <div>
+                                    <h3 className="font-black text-lg text-foreground tracking-tight">Project Vendor Orders</h3>
+                                    <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest opacity-60 mt-0.5">{vendorOrders.length} active orders for this project</p>
+                                </div>
+                                <Button size="sm" onClick={() => setIsVendorOrderDialogOpen(true)} className="h-9 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase text-[10px] tracking-widest shadow-lg shadow-indigo-600/20">
+                                    <Plus className="h-3.5 w-3.5 mr-2" />
+                                    New Vendor Order
+                                </Button>
+                            </div>
+
+                            {vendorOrders.length > 0 ? (
+                                <div className="bg-card rounded-[2rem] border border-border/60 shadow-sm overflow-hidden transition-all hover:shadow-xl">
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-sm">
+                                            <thead className="bg-muted/30 border-b border-border/50">
+                                                <tr>
+                                                    <th className="px-6 py-4 text-left font-black text-[10px] text-muted-foreground uppercase tracking-[0.2em]">Vendor / PO #</th>
+                                                    <th className="px-6 py-4 text-left font-black text-[10px] text-muted-foreground uppercase tracking-[0.2em]">Order Date</th>
+                                                    <th className="px-6 py-4 text-right font-black text-[10px] text-muted-foreground uppercase tracking-[0.2em]">Amount</th>
+                                                    <th className="px-6 py-4 text-center font-black text-[10px] text-muted-foreground uppercase tracking-[0.2em]">Status</th>
+                                                    <th className="px-6 py-4 text-center font-black text-[10px] text-muted-foreground uppercase tracking-[0.2em]">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-border/40">
+                                                {vendorOrders
+                                                  .filter(vo => !vo.client_po_id || vo.client_po_id === poData.id)
+                                                  .map((vo) => (
+                                                    <tr key={vo.id} className="group hover:bg-muted/20 transition-colors">
+                                                        <td className="px-6 py-5">
+                                                            <div className="flex flex-col gap-0.5">
+                                                                <span className="font-black text-foreground group-hover:text-indigo-600 transition-colors">{vo.vendor_name || 'N/A'}</span>
+                                                                <span className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider">{vo.po_number || `VO-${vo.id}`}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-6 py-5 text-muted-foreground font-bold text-xs">
+                                                            {vo.po_date || vo.created_at?.split('T')[0] || '--'}
+                                                        </td>
+                                                        <td className="px-6 py-5 text-right">
+                                                            <span className="font-black text-indigo-600 tracking-tight">{formatCurrency(vo.amount)}</span>
+                                                        </td>
+                                                        <td className="px-6 py-5 text-center">
+                                                            <Badge 
+                                                                variant="outline" 
+                                                                className={cn(
+                                                                    "text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-lg border-2",
+                                                                    vo.status === 'completed' ? "bg-emerald-500/5 text-emerald-600 border-emerald-500/20" :
+                                                                    vo.status === 'approved' ? "bg-blue-500/5 text-blue-600 border-blue-500/20" :
+                                                                    "bg-amber-500/5 text-amber-600 border-amber-500/20"
+                                                                )}
+                                                            >
+                                                                {vo.status || 'pending'}
+                                                            </Badge>
+                                                        </td>
+                                                        <td className="px-6 py-5">
+                                                            <div className="flex items-center justify-center gap-2">
+                                                                <Button 
+                                                                    size="sm" 
+                                                                    variant="outline" 
+                                                                    className="h-8 px-3 rounded-lg border-indigo-500/20 text-indigo-600 hover:bg-indigo-50 font-black text-[10px] uppercase tracking-widest"
+                                                                    onClick={() => {
+                                                                        setSelectedDetailsOrder(vo);
+                                                                        setIsVendorOrderDetailsOpen(true);
+                                                                    }}
+                                                                >
+                                                                    <Eye className="h-3.5 w-3.5 mr-1.5" />
+                                                                    View
+                                                                </Button>
+                                                                <Button 
+                                                                    size="sm" 
+                                                                    variant="ghost" 
+                                                                    className="h-8 w-8 p-0 text-muted-foreground hover:text-indigo-600 hover:bg-indigo-50 rounded-lg group/edit"
+                                                                    onClick={() => handleEditVendorOrder(vo)}
+                                                                >
+                                                                    <Edit className="h-3.5 w-3.5 transition-transform group-hover/edit:scale-110" />
+                                                                </Button>
+                                                                <Button 
+                                                                    size="sm" 
+                                                                    variant="ghost" 
+                                                                    className="h-8 w-8 p-0 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded-lg group/delete"
+                                                                    onClick={() => handleDeleteVendorOrder(vo.id)}
+                                                                >
+                                                                    <Trash2 className="h-3.5 w-3.5 transition-transform group-hover/delete:scale-110" />
+                                                                </Button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="py-16 rounded-[2.5rem] border-2 border-dashed border-border/60 text-center flex flex-col items-center justify-center bg-muted/5 group">
+                                    <div className="h-16 w-16 rounded-3xl bg-indigo-500/5 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500">
+                                        <Package className="h-8 w-8 text-indigo-500 opacity-20" />
+                                    </div>
+                                    <h4 className="text-lg font-black text-foreground tracking-tight">Project Vendors Idle</h4>
+                                    <p className="text-xs text-muted-foreground mt-2 mb-8 max-w-[300px] font-bold uppercase tracking-widest opacity-60 leading-relaxed">
+                                        No vendor orders linked to this project scope.
+                                    </p>
+                                    <Button onClick={() => setIsVendorOrderDialogOpen(true)} variant="outline" className="h-11 px-8 rounded-2xl border-indigo-500/20 text-indigo-600 hover:bg-indigo-50 font-black uppercase text-[10px] tracking-[0.2em] shadow-lg shadow-indigo-600/5 transition-all active:scale-95">
+                                        <Plus className="h-4 w-4 mr-2" />
+                                        Initiate Order
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
+                      </div>
                     </TabsContent>
+
+                    <TabsContent value="quotation" className="mt-0 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <QuotationTab
+                            storeId={(poData as any)?.store_id || (data as any)?.storeId || (data as any)?.store_id || 'STORE-2024-001'}
+                            projectId={currentProjectId}
+                        />
+                    </TabsContent>
+
 
 
                  </div>
@@ -1539,9 +1612,10 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
         projectId={currentProjectId}
         purchaseOrder={poData}
         existingOrder={selectedVendorOrder}
+        availableLineItems={lineItems}
         onSuccess={async () => {
-          await fetchData(); // Refresh DetailDrawer data
-          await refreshData(); // Refresh dashboard data (updates VendorPOTracking)
+          await fetchData(true); // Refresh DetailDrawer data with cache bypass
+          await refreshData(true); // Refresh dashboard data with cache bypass
         }}
       />
 
@@ -1744,6 +1818,7 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
 
     </Sheet>
   );

@@ -18,10 +18,11 @@ interface VendorOrderDialogProps {
     projectId: number;
     purchaseOrder?: PurchaseOrder | null;
     existingOrder?: VendorOrder | null;
+    availableLineItems?: any[];
     onSuccess: () => void;
 }
 
-export function VendorOrderDialog({ open, onClose, projectId: initialProjectId, purchaseOrder, existingOrder, onSuccess }: VendorOrderDialogProps) {
+export function VendorOrderDialog({ open, onClose, projectId: initialProjectId, purchaseOrder, existingOrder, availableLineItems = [], onSuccess }: VendorOrderDialogProps) {
     const { projects } = useDashboard();
     const [isLoading, setIsLoading] = useState(false);
     const [selectedProjectId, setSelectedProjectId] = useState<number>(initialProjectId);
@@ -98,6 +99,20 @@ export function VendorOrderDialog({ open, onClose, projectId: initialProjectId, 
         }
     }, [existingOrder, open, vendors, purchaseOrder]);
 
+    const handleDescriptionChange = (val: string) => {
+        setFormData(prev => ({ ...prev, description: val }));
+        
+        // Auto-fill amount if description matches a line item
+        const matchingItem = availableLineItems.find(item => 
+            (item.description || item.item_name || item.boq_name) === val
+        );
+        
+        if (matchingItem && !existingOrder) {
+            const amount = matchingItem.amount || matchingItem.total_price || (matchingItem.quantity * matchingItem.unit_price) || 0;
+            setFormData(prev => ({ ...prev, amount }));
+        }
+    };
+
     const handleSubmit = async () => {
         if (!vendorName.trim()) {
             toast({ title: "Error", description: "Please enter a vendor name", variant: "destructive" });
@@ -164,6 +179,7 @@ export function VendorOrderDialog({ open, onClose, projectId: initialProjectId, 
 
             const payload: any = {
                 vendor_id: finalVendorId,
+                client_po_id: purchaseOrder?.id,
                 po_number: formData.po_number?.trim() || `VO-${Date.now()}`,
                 amount: amount,
                 description: formData.description || '',
@@ -328,12 +344,23 @@ export function VendorOrderDialog({ open, onClose, projectId: initialProjectId, 
 
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="description" className="text-right">Description</Label>
-                        <Textarea 
-                            id="description"
-                            value={formData.description || ''}
-                            onChange={(e) => setFormData({...formData, description: e.target.value})}
-                            className="col-span-3"
-                        />
+                        <div className="col-span-3">
+                            <Input 
+                                id="description"
+                                list="items-list"
+                                value={formData.description || ''}
+                                onChange={(e) => handleDescriptionChange(e.target.value)}
+                                placeholder="Type item description..."
+                            />
+                            <datalist id="items-list">
+                                {availableLineItems.map((item, idx) => (
+                                    <option 
+                                        key={idx} 
+                                        value={item.description || item.item_name || item.boq_name} 
+                                    />
+                                ))}
+                            </datalist>
+                        </div>
                     </div>
                 </div>
 

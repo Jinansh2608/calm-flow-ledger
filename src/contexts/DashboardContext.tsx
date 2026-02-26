@@ -187,19 +187,19 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
       let summary: any = null;
 
       try {
-        const res = await projectService.getAllProjects();
+        const res = await projectService.getAllProjects(silent);
         projects = res?.projects || [];
       } catch (e) { console.warn("Failed to load projects", e); }
 
       try {
-        const res = await vendorService.getAllVendors();
-        vendors = res?.data || (Array.isArray(res) ? res : []);
+        const res = await vendorService.getAllVendors(undefined, silent);
+        vendors = res?.vendors || res?.data || (Array.isArray(res) ? res : []);
       } catch (e) { console.warn("Failed to load vendors", e); }
 
       try {
-        const res = await poService.getAggregatedPOs();
-        bundles = res?.bundles || [];
-        summary = res?.summary || null;
+        const resAgg = await poService.getAggregatedPOs(undefined, silent);
+        bundles = resAgg?.bundles || [];
+        summary = resAgg?.summary || null;
       } catch (e) { console.warn("Failed to load aggregated POs", e); }
 
       try {
@@ -235,7 +235,7 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
 
       // Fetch Vendor Orders for all projects (this is still needed for initial summaries)
       const vendorOrderPromises = projects.map(p => 
-        vendorService.getProjectVendorOrders(p.id).catch(() => [])
+        vendorService.getProjectVendorOrders(p.id, silent).catch(() => [])
       );
       const vendorOrdersArrays = await Promise.all(vendorOrderPromises);
       const allVendorOrders = vendorOrdersArrays.flat();

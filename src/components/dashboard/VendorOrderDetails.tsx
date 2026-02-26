@@ -34,7 +34,7 @@ export function VendorOrderDetails({ open, onClose, vendorOrder }: VendorOrderDe
     const [isLinkPaymentOpen, setIsLinkPaymentOpen] = useState(false);
     const [linkPaymentForm, setLinkPaymentForm] = useState({ amount: 0, payment_id: '' });
 
-    const fetchDetails = useCallback(async () => {
+    const fetchDetails = useCallback(async (bypassCache: boolean = false) => {
         if (!vendorOrder) return;
         setIsLoading(true);
         try {
@@ -43,10 +43,10 @@ export function VendorOrderDetails({ open, onClose, vendorOrder }: VendorOrderDe
             
             // Parallel fetch - with error handling for each request
             const results = await Promise.allSettled([
-                poService.getVendorOrder(vendorOrder.id),
-                poService.getVendorOrderLineItems(vendorOrder.id),
-                poService.getVendorOrderPaymentSummary(vendorOrder.id),
-                poService.getVendorOrderProfitAnalysis(vendorOrder.id)
+                poService.getVendorOrder(vendorOrder.id, bypassCache),
+                poService.getVendorOrderLineItems(vendorOrder.id, bypassCache),
+                poService.getVendorOrderPaymentSummary(vendorOrder.id, bypassCache),
+                poService.getVendorOrderProfitAnalysis(vendorOrder.id, bypassCache)
             ]);
             
             const orderData = results[0].status === 'fulfilled' ? results[0].value : null;
@@ -71,7 +71,7 @@ export function VendorOrderDetails({ open, onClose, vendorOrder }: VendorOrderDe
 
     useEffect(() => {
         if (open && vendorOrder) {
-            fetchDetails();
+            fetchDetails(true);
         }
     }, [open, vendorOrder, fetchDetails]);
 

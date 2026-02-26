@@ -50,6 +50,13 @@
 
     --radius: 0.75rem;
 
+    /* Chart colors for data visualization */
+    --chart-1: 196 90% 35%;
+    --chart-2: 162 70% 38%;
+    --chart-3: 34 94% 45%;
+    --chart-4: 270 70% 50%;
+    --chart-5: 0 84% 54%;
+
     /* Multi-layered shadows for premium feel */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05);
@@ -69,26 +76,26 @@
 
   .dark {
     /* Ultimate Dark Mode - Depth & Contrast */
-    --background: 220 33% 3.5%;
+    --background: 222 35% 4%;
     --foreground: 210 40% 98%;
 
-    --card: 220 33% 5.5%;
+    --card: 222 30% 6%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 220 33% 7%;
+    --popover: 222 30% 8%;
     --popover-foreground: 210 40% 98%;
 
     /* Vibrant Teal for Dark Mode */
     --primary: 188 90% 48%;
-    --primary-foreground: 220 33% 3.5%;
+    --primary-foreground: 222 35% 4%;
     --primary-light: 188 60% 10%;
     --primary-medium: 188 80% 35%;
 
-    --secondary: 220 25% 10%;
-    --secondary-foreground: 210 30% 90%;
+    --secondary: 222 20% 11%;
+    --secondary-foreground: 210 30% 92%;
 
-    --muted: 220 25% 10%;
-    --muted-foreground: 217.2 32.6% 65%;
+    --muted: 222 20% 11%;
+    --muted-foreground: 217 32% 68%;
 
     --accent: 188 50% 10%;
     --accent-foreground: 188 90% 70%;
@@ -106,9 +113,16 @@
     --destructive-light: 0 50% 8%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 25% 12%;
-    --input: 220 25% 12%;
+    --border: 222 20% 14%;
+    --input: 222 20% 14%;
     --ring: 188 90% 48%;
+
+    /* Chart colors for data visualization */
+    --chart-1: 188 90% 48%;
+    --chart-2: 158 75% 45%;
+    --chart-3: 42 95% 48%;
+    --chart-4: 270 70% 60%;
+    --chart-5: 0 85% 55%;
 
     /* Deep shadows for OLED screens */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.5);
@@ -116,13 +130,13 @@
     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.7), 0 4px 6px -4px rgb(0 0 0 / 0.6);
     --shadow-card: 0 4px 20px -5px rgb(0 0 0 / 0.8), 0 0 0 1px rgb(255 255 255 / 0.05);
 
-    --sidebar-background: 220 33% 4.5%;
-    --sidebar-foreground: 210 30% 85%;
+    --sidebar-background: 222 35% 5%;
+    --sidebar-foreground: 210 30% 88%;
     --sidebar-primary: 188 90% 48%;
-    --sidebar-primary-foreground: 220 33% 3.5%;
+    --sidebar-primary-foreground: 222 35% 4%;
     --sidebar-accent: 188 50% 10%;
     --sidebar-accent-foreground: 188 90% 70%;
-    --sidebar-border: 220 25% 10%;
+    --sidebar-border: 222 20% 12%;
     --sidebar-ring: 188 90% 48%;
   }
 }

@@ -22,8 +22,8 @@ export const poService = {
   },
 
   // 2. Get Single PO
-  getPODetails: async (poId: number) => {
-    const response = await apiRequest<any>(`/client-po/${poId}`);
+  getPODetails: async (poId: number, bypassCache: boolean = false) => {
+    const response = await apiRequest<any>(`/client-po/${poId}`, { bypassCache } as any);
     // Backend returns flat structure for this endpoint (no 'data' wrapper)
     const data = response.data || response;
     if (!data) return null;
@@ -62,11 +62,11 @@ export const poService = {
   },
 
   // 3a. Get Aggregated POs
-  getAggregatedPOs: async (clientId?: number) => {
+  getAggregatedPOs: async (clientId?: number, bypassCache: boolean = false) => {
     const params = new URLSearchParams();
     if (clientId) params.append('client_id', String(clientId));
     
-    const response = await apiRequest<AggregatedPOResponse>(`/po/aggregated/by-store?${params}`);
+    const response = await apiRequest<AggregatedPOResponse>(`/po/aggregated/by-store?${params}`, { bypassCache } as any);
     return response.data;
   },
 
@@ -164,9 +164,9 @@ export const poService = {
     return response.data;
   },
 
-  getLineItems: async (poId: number) => {
+  getLineItems: async (poId: number, bypassCache: boolean = false) => {
     // Backend returns { status: "SUCCESS", line_items: [...] } OR sometimes just the array
-    const response = await apiRequest<any>(`/po/${poId}/line-items`);
+    const response = await apiRequest<any>(`/po/${poId}/line-items`, { bypassCache } as any);
     const data = response.data;
     
     // Check if response itself is the array or has line_items
@@ -316,14 +316,21 @@ export const poService = {
 
   // Vendor Orders
   // Vendor Orders
-  getProjectVendorOrders: async (projectId: number) => {
-      const response = await apiRequest<{ status: string; vendor_order_count: number; vendor_orders: any[] }>(`/projects/${projectId}/vendor-orders`);
+  getProjectVendorOrders: async (projectId: number, bypassCache: boolean = false) => {
+      const response = await apiRequest<{ status: string; vendor_order_count: number; vendor_orders: any[] }>(`/projects/${projectId}/vendor-orders`, { bypassCache } as any);
       // Backend returns flat structure
       const data: any = response.data || response;
-      const rawOrders = data?.vendor_orders || [];
-      return rawOrders.map((o: any) => ({
-          ...o,
-          amount: o.amount || o.po_value || 0
+      let rawOrders = [];
+      if (Array.isArray(data)) {
+        rawOrders = data;
+      } else {
+        rawOrders = data?.vendor_orders || data?.orders || data?.data || [];
+      }
+      return rawOrders.map((vo: any) => ({
+          ...vo,
+          id: vo.id || vo.vendor_order_id,
+          vendor_name: vo.vendor_name || vo.vendor?.name,
+          amount: vo.amount || vo.po_value || 0
       })) as VendorOrder[];
   },
 
@@ -335,8 +342,8 @@ export const poService = {
       return response.data?.vendor_order;
   },
 
-  getVendorOrder: async (orderId: number) => {
-      const response = await apiRequest<{ status: string; vendor_order: VendorOrder }>(`/vendor-orders/${orderId}`);
+  getVendorOrder: async (orderId: number, bypassCache: boolean = false) => {
+      const response = await apiRequest<{ status: string; vendor_order: VendorOrder }>(`/vendor-orders/${orderId}`, { bypassCache } as any);
       return response.data?.vendor_order;
   },
 
@@ -372,8 +379,8 @@ export const poService = {
       return response.data?.line_item;
   },
 
-  getVendorOrderLineItems: async (orderId: number) => {
-      const response = await apiRequest<{ status: string; vendor_order_id: number; line_item_count: number; line_items: any[] }>(`/vendor-orders/${orderId}/line-items`);
+  getVendorOrderLineItems: async (orderId: number, bypassCache: boolean = false) => {
+      const response = await apiRequest<{ status: string; vendor_order_id: number; line_item_count: number; line_items: any[] }>(`/vendor-orders/${orderId}/line-items`, { bypassCache } as any);
       // Backend returns flat structure
       const data: any = response.data || response;
       return data?.line_items || [];
@@ -403,13 +410,13 @@ export const poService = {
       return response.data?.linked_payment;
   },
 
-  getVendorOrderPaymentSummary: async (orderId: number) => {
-      const response = await apiRequest<{ status: string; vendor_order_id: number; po_amount: number; paid_amount: number; pending_amount: number; payment_status: string; payment_count: number; payments: any[] }>(`/vendor-orders/${orderId}/payment-summary`);
+  getVendorOrderPaymentSummary: async (orderId: number, bypassCache: boolean = false) => {
+      const response = await apiRequest<{ status: string; vendor_order_id: number; po_amount: number; paid_amount: number; pending_amount: number; payment_status: string; payment_count: number; payments: any[] }>(`/vendor-orders/${orderId}/payment-summary`, { bypassCache } as any);
       return response.data;
   },
   
-  getVendorOrderProfitAnalysis: async (orderId: number) => {
-      const response = await apiRequest<{ status: string; profit: number; profit_margin: number; linked_client_pos: number[] }>(`/vendor-orders/${orderId}/profit-analysis`);
+  getVendorOrderProfitAnalysis: async (orderId: number, bypassCache: boolean = false) => {
+      const response = await apiRequest<{ status: string; profit: number; profit_margin: number; linked_client_pos: number[] }>(`/vendor-orders/${orderId}/profit-analysis`, { bypassCache } as any);
       return response.data;
   },
 

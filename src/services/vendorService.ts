@@ -73,7 +73,7 @@ export const vendorService = {
     gstin?: string;
     limit?: number;
     offset?: number;
-  }) => {
+  }, bypassCache: boolean = false) => {
     try {
       const params = new URLSearchParams();
       if (filters?.status) params.append('status', filters.status);
@@ -83,7 +83,8 @@ export const vendorService = {
       params.append('offset', String(filters?.offset || 0));
       
       const response: any = await apiRequest<VendorListResponse>(
-        `/vendors${params.toString() ? '?' + params.toString() : ''}`
+        `/vendors${params.toString() ? '?' + params.toString() : ''}`,
+        { bypassCache } as any
       );
       return response.data || response;
     } catch (error: unknown) {
@@ -97,10 +98,11 @@ export const vendorService = {
    * List vendors with pagination (legacy)
    * GET /api/vendors?limit=10&offset=0
    */
-  listVendors: async (limit: number = 50, offset: number = 0) => {
+  listVendors: async (limit: number = 50, offset: number = 0, bypassCache: boolean = false) => {
     try {
       const response: any = await apiRequest<VendorListResponse>(
-        `/vendors?limit=${limit}&offset=${offset}`
+        `/vendors?limit=${limit}&offset=${offset}`,
+        { bypassCache } as any
       );
       return response.data || response;
     } catch (error: unknown) {
@@ -260,9 +262,9 @@ export const vendorService = {
    * Get all vendor orders for a project
    * GET /api/projects/{project_id}/vendor-orders
    */
-  getProjectVendorOrders: async (projectId: number) => {
+  getProjectVendorOrders: async (projectId: number, bypassCache: boolean = false) => {
     try {
-      const response: any = await apiRequest<any>(`/projects/${projectId}/vendor-orders`);
+      const response: any = await apiRequest<any>(`/projects/${projectId}/vendor-orders`, { bypassCache } as any);
       // Handle wrapped response
       const data = response.data || response;
       let orders = [];

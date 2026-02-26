@@ -45,20 +45,20 @@ const getStatusConfig = (status: string) => {
 const paymentBadgeStyle = (status: string) =>
   cn(
     "font-black text-[9px] w-full justify-center py-1 rounded-md border uppercase tracking-wider",
-    status === "paid" && "bg-emerald-950/60 text-emerald-400 border-emerald-700/40",
-    status === "partial" && "bg-amber-950/60 text-amber-400 border-amber-700/40",
-    status === "pending" && "bg-slate-800/60 text-slate-400 border-slate-600/40",
-    status === "overdue" && "bg-rose-950/60 text-rose-400 border-rose-700/40"
+    status === "paid" && "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
+    status === "partial" && "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20",
+    status === "pending" && "bg-slate-500/10 text-slate-700 dark:text-slate-400 border-slate-500/20",
+    status === "overdue" && "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20"
   );
 
 const statusBadgeStyle = (status: string) =>
   cn(
     "font-black text-[9px] w-full justify-center py-1 rounded-md border uppercase tracking-wider",
-    status === "active" && "bg-blue-950/60 text-blue-400 border-blue-700/40",
-    status === "completed" && "bg-emerald-950/60 text-emerald-400 border-emerald-700/40",
-    status === "cancelled" && "bg-rose-950/60 text-rose-400 border-rose-700/40",
-    status === "draft" && "bg-slate-800/60 text-slate-400 border-slate-600/40",
-    status === "pending" && "bg-amber-950/60 text-amber-400 border-amber-700/40"
+    status === "active" && "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20",
+    status === "completed" && "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
+    status === "cancelled" && "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20",
+    status === "draft" && "bg-slate-500/10 text-slate-700 dark:text-slate-400 border-slate-500/20",
+    status === "pending" && "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
   );
 
 const statusDotColor = (status: string) =>
@@ -183,14 +183,14 @@ const ClientPOTable = ({ onSelectPO }: ClientPOTableProps) => {
         {filteredClientPOs.length > 0 ? (
           <Table>
             <TableHeader>
-              <TableRow className="hover:bg-transparent border-b border-border/30">
-                <TableHead className="py-3.5 pl-7 text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em]">Client</TableHead>
-                <TableHead className="py-3.5 text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em]">Project Name</TableHead>
-                <TableHead className="py-3.5 text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em]">PO Number</TableHead>
-                <TableHead className="py-3.5 text-right text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em]">PO Value</TableHead>
-                <TableHead className="py-3.5 text-right text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em]">Outstanding</TableHead>
-                <TableHead className="py-3.5 text-center text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em]">Payment</TableHead>
-                <TableHead className="py-3.5 text-center text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em]">Status</TableHead>
+              <TableRow className="hover:bg-transparent border-b border-border/50 bg-muted/30">
+                <TableHead className="py-4 pl-7 text-[10px] font-black text-foreground/70 uppercase tracking-[0.2em]">Client</TableHead>
+                <TableHead className="py-4 text-[10px] font-black text-foreground/70 uppercase tracking-[0.2em]">Project Name</TableHead>
+                <TableHead className="py-4 text-[10px] font-black text-foreground/70 uppercase tracking-[0.2em]">PO Number</TableHead>
+                <TableHead className="py-4 text-right text-[10px] font-black text-foreground/70 uppercase tracking-[0.2em]">PO Value</TableHead>
+                <TableHead className="py-4 text-right text-[10px] font-black text-foreground/70 uppercase tracking-[0.2em]">Outstanding</TableHead>
+                <TableHead className="py-4 text-center text-[10px] font-black text-foreground/70 uppercase tracking-[0.2em]">Payment</TableHead>
+                <TableHead className="py-4 text-center text-[10px] font-black text-foreground/70 uppercase tracking-[0.2em]">Status</TableHead>
                 <TableHead className="w-14"></TableHead>
               </TableRow>
             </TableHeader>

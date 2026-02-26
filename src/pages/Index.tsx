@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Wallet, ArrowDownLeft, ArrowUpRight, TrendingUp, DollarSign, Folder } from "lucide-react";
+import { Wallet, ArrowDownLeft, ArrowUpRight, TrendingUp, DollarSign } from "lucide-react";
 import { DashboardProvider, useDashboard, ClientPO } from "@/contexts/DashboardContext";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import FilterSidebar from "@/components/dashboard/FilterSidebar";
@@ -8,7 +8,10 @@ import ClientPOTable from "@/components/dashboard/ClientPOTable";
 import VendorPOTracking from "@/components/dashboard/VendorPOTracking";
 import ProfitMarginSection from "@/components/dashboard/ProfitMarginSection";
 import DetailDrawer from "@/components/dashboard/DetailDrawer";
+import QuotationDashboard from "@/components/dashboard/QuotationDashboard";
+
 import { clientService } from "@/services/clientService";
+
 
 const formatCurrency = (value: number) => {
   if (value >= 100000) {
@@ -251,41 +254,13 @@ const DashboardContent = () => {
             />
           </div>
 
-          {/* Projects Section */}
-          {projects && projects.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                <Folder className="h-5 w-5" />
-                Projects ({projects.length})
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {projects.map((project) => (
-                  <div
-                    key={project.id}
-                    className="p-4 rounded-lg border bg-card hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <h4 className="font-semibold text-foreground truncate flex-1">{project.name}</h4>
-                      <span className="text-xs bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400 px-2 py-1 rounded font-medium whitespace-nowrap ml-2">
-                        {project.status || 'Active'}
-                      </span>
-                    </div>
-                    {project.created_at && (
-                      <p className="text-xs text-muted-foreground">
-                        Created: {new Date(project.created_at).toLocaleDateString('en-IN')}
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Main Content Grid - Now full width without insights panel */}
-          <div className="space-y-6">
+          <div className="space-y-12">
+            <QuotationDashboard />
             <ClientPOTable onSelectPO={handleSelectPO} />
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
               <VendorPOTracking />
               <ProfitMarginSection />
             </div>
@@ -295,7 +270,10 @@ const DashboardContent = () => {
 
       <DetailDrawer
         open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
+        onClose={() => {
+            setDrawerOpen(false);
+            setSelectedPO(null);
+        }}
         data={selectedPO as any}
         onProjectDeleted={() => {
            // Refresh data when a project is deleted

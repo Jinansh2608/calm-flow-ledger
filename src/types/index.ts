@@ -225,6 +225,7 @@ export interface VendorOrder {
   po_date?: string;
   due_date?: string;
   line_item_count?: number;
+  client_po_id?: number;
   created_at: string;
   updated_at?: string;
 }
