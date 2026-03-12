@@ -214,11 +214,12 @@ export interface BulkPaymentResponse {
 export interface VendorOrder {
   id: number;
   project_id: number;
-  vendor_id: number;
+  vendor_id?: number;
   vendor_name?: string;
   po_number: string;
   amount: number;
   status: string;
+  category?: string;
   work_status?: 'pending' | 'in_progress' | 'completed';
   payment_status?: 'unpaid' | 'partially_paid' | 'paid';
   description?: string;
@@ -226,8 +227,24 @@ export interface VendorOrder {
   due_date?: string;
   line_item_count?: number;
   client_po_id?: number;
+  po_value?: number;
   created_at: string;
   updated_at?: string;
+  line_items?: VendorOrderLineItem[];
+}
+
+export interface VendorOrderLineItem {
+  id: number;
+  vendor_order_id: number;
+  item_name: string;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+  status: string;
+  delivery_progress: number;
+  vendor_id?: number;
+  vendor_name?: string;
+  order_date?: string;
 }
 
 export interface Payment {

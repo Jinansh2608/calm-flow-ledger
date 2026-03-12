@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Truck, Clock, AlertCircle, Package, ChevronRight, Building2 } from "lucide-react";
+import { Truck, Clock, AlertCircle, Package, ChevronRight, Building2, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -196,7 +196,7 @@ const VendorDetailDialog = ({
 };
 
 const VendorPOTracking = () => {
-  const { filteredVendorPOs, isFiltered } = useDashboard();
+  const { filteredVendorPOs, isFiltered, isRefreshing } = useDashboard();
   const [selectedVendor, setSelectedVendor] = useState<VendorPO | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -230,7 +230,12 @@ const VendorPOTracking = () => {
         </div>
 
         <div className="p-4 space-y-3 max-h-[400px] overflow-y-auto">
-          {filteredVendorPOs.length > 0 ? (
+          {isRefreshing ? (
+             <div className="flex flex-col items-center justify-center py-8 text-center">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground mb-2" />
+                <p className="text-sm font-medium text-foreground">Refreshing vendor orders...</p>
+             </div>
+          ) : filteredVendorPOs.length > 0 ? (
             filteredVendorPOs.map((vpo) => (
               <div
                 key={vpo.id}

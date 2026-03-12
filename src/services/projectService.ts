@@ -122,5 +122,17 @@ export const projectService = {
       body: JSON.stringify({ approved_by: approvedBy })
     });
     return response.data;
+  },
+  
+  // Project Specifications
+  getProjectLineItems: async (projectId: number) => {
+    try {
+      const response: any = await apiRequest<any>(`/projects/${projectId}/line-items`);
+      const data = response.data || response;
+      return data.line_items || [];
+    } catch (error: any) {
+      console.error("Failed to fetch project specifications:", error);
+      return [];
+    }
   }
 };

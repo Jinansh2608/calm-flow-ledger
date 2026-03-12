@@ -25,7 +25,8 @@ import {
   TrendingUp,
   TrendingDown,
   Package,
-  Building2
+  Building2,
+  Zap
 } from "lucide-react";
 import { poService } from "@/services/poService";
 import { toast } from "@/hooks/use-toast";
@@ -794,7 +795,7 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
                         Project Details
                     </TabsTrigger>
                     <TabsTrigger 
-                        value="items" 
+                        value="line-items" 
                         className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs font-black uppercase tracking-widest transition-all hover:text-primary/70"
                     >
                         Line Items
@@ -1150,7 +1151,7 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
                          </div>
                     </TabsContent>
 
-                    <TabsContent value="items" className="mt-0 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <TabsContent value="line-items" className="mt-0 animate-in fade-in slide-in-from-bottom-2 duration-300">
                        <div className="space-y-6">
                           <div className="flex justify-between items-center">
                             <div>
@@ -1461,15 +1462,16 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
 
                     <TabsContent value="vendor-master" className="mt-0 animate-in fade-in slide-in-from-bottom-2 duration-300">
                       <div className="space-y-8">
-                        {/* Global Registry Access */}
-                        <div className="flex items-center justify-between p-6 bg-gradient-to-r from-indigo-500/5 to-violet-500/5 rounded-[2rem] border border-indigo-500/10">
-                            <div>
-                                <h3 className="font-black text-lg text-indigo-900 dark:text-indigo-300 tracking-tight">Master Order Registry</h3>
-                                <p className="text-xs text-indigo-600/60 font-bold uppercase tracking-widest mt-0.5">Project Procurement & Rate Configuration</p>
+                        {/* Global Bundle Access */}
+                        <div className="flex items-center justify-between p-8 bg-black dark:bg-slate-900 rounded-[2.5rem] border border-white/10 shadow-2xl relative overflow-hidden">
+                            <div className="absolute top-0 right-0 h-full w-1/2 bg-gradient-to-l from-indigo-500/10 to-transparent pointer-events-none" />
+                            <div className="relative z-10">
+                                <h3 className="font-black text-2xl text-white tracking-tighter italic uppercase">Procurement Bundle Creator</h3>
+                                <p className="text-[10px] text-indigo-300 font-bold uppercase tracking-[0.2em] mt-1 opacity-80">Category-Driven Logistic Orchestration</p>
                             </div>
                             <VendorMasterDialog 
                                 projectId={currentProjectId}
-                                projectLineItems={lineItems}
+                                availableLineItems={lineItems}
                                 onSuccess={async () => {
                                     await fetchData(true);
                                     await refreshData(true);
@@ -1477,113 +1479,100 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
                             />
                         </div>
 
-                        {/* Project Specific Vendor Orders */}
-                        <div className="space-y-6">
-                            <div className="flex justify-between items-center px-2">
-                                <div>
-                                    <h3 className="font-black text-lg text-foreground tracking-tight">Project Vendor Orders</h3>
-                                    <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest opacity-60 mt-0.5">{vendorOrders.length} active orders for this project</p>
-                                </div>
-                                <Button size="sm" onClick={() => setIsVendorOrderDialogOpen(true)} className="h-9 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase text-[10px] tracking-widest shadow-lg shadow-indigo-600/20">
-                                    <Plus className="h-3.5 w-3.5 mr-2" />
-                                    New Vendor Order
-                                </Button>
-                            </div>
+                        {/* Project Specific Vendor Orders Grouped by Category */}
+                        <div className="space-y-10">
+                            {(() => {
+                                // Group by category
+                                const grouped: Record<string, VendorOrder[]> = {};
+                                vendorOrders.forEach(vo => {
+                                    const cat = vo.category || 'Uncategorized';
+                                    if (!grouped[cat]) grouped[cat] = [];
+                                    grouped[cat].push(vo);
+                                });
 
-                            {vendorOrders.length > 0 ? (
-                                <div className="bg-card rounded-[2rem] border border-border/60 shadow-sm overflow-hidden transition-all hover:shadow-xl">
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-sm">
-                                            <thead className="bg-muted/30 border-b border-border/50">
-                                                <tr>
-                                                    <th className="px-6 py-4 text-left font-black text-[10px] text-muted-foreground uppercase tracking-[0.2em]">Vendor / PO #</th>
-                                                    <th className="px-6 py-4 text-left font-black text-[10px] text-muted-foreground uppercase tracking-[0.2em]">Order Date</th>
-                                                    <th className="px-6 py-4 text-right font-black text-[10px] text-muted-foreground uppercase tracking-[0.2em]">Amount</th>
-                                                    <th className="px-6 py-4 text-center font-black text-[10px] text-muted-foreground uppercase tracking-[0.2em]">Status</th>
-                                                    <th className="px-6 py-4 text-center font-black text-[10px] text-muted-foreground uppercase tracking-[0.2em]">Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-border/40">
-                                                {vendorOrders
-                                                  .filter(vo => !vo.client_po_id || vo.client_po_id === poData.id)
-                                                  .map((vo) => (
-                                                    <tr key={vo.id} className="group hover:bg-muted/20 transition-colors">
-                                                        <td className="px-6 py-5">
-                                                            <div className="flex flex-col gap-0.5">
-                                                                <span className="font-black text-foreground group-hover:text-indigo-600 transition-colors">{vo.vendor_name || 'N/A'}</span>
-                                                                <span className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider">{vo.po_number || `VO-${vo.id}`}</span>
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-6 py-5 text-muted-foreground font-bold text-xs">
-                                                            {vo.po_date || vo.created_at?.split('T')[0] || '--'}
-                                                        </td>
-                                                        <td className="px-6 py-5 text-right">
-                                                            <span className="font-black text-indigo-600 tracking-tight">{formatCurrency(vo.amount)}</span>
-                                                        </td>
-                                                        <td className="px-6 py-5 text-center">
-                                                            <Badge 
-                                                                variant="outline" 
-                                                                className={cn(
-                                                                    "text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-lg border-2",
-                                                                    vo.status === 'completed' ? "bg-emerald-500/5 text-emerald-600 border-emerald-500/20" :
-                                                                    vo.status === 'approved' ? "bg-blue-500/5 text-blue-600 border-blue-500/20" :
-                                                                    "bg-amber-500/5 text-amber-600 border-amber-500/20"
-                                                                )}
-                                                            >
-                                                                {vo.status || 'pending'}
-                                                            </Badge>
-                                                        </td>
-                                                        <td className="px-6 py-5">
-                                                            <div className="flex items-center justify-center gap-2">
-                                                                <Button 
-                                                                    size="sm" 
-                                                                    variant="outline" 
-                                                                    className="h-8 px-3 rounded-lg border-indigo-500/20 text-indigo-600 hover:bg-indigo-50 font-black text-[10px] uppercase tracking-widest"
-                                                                    onClick={() => {
-                                                                        setSelectedDetailsOrder(vo);
-                                                                        setIsVendorOrderDetailsOpen(true);
-                                                                    }}
-                                                                >
-                                                                    <Eye className="h-3.5 w-3.5 mr-1.5" />
-                                                                    View
-                                                                </Button>
-                                                                <Button 
-                                                                    size="sm" 
-                                                                    variant="ghost" 
-                                                                    className="h-8 w-8 p-0 text-muted-foreground hover:text-indigo-600 hover:bg-indigo-50 rounded-lg group/edit"
-                                                                    onClick={() => handleEditVendorOrder(vo)}
-                                                                >
-                                                                    <Edit className="h-3.5 w-3.5 transition-transform group-hover/edit:scale-110" />
-                                                                </Button>
-                                                                <Button 
-                                                                    size="sm" 
-                                                                    variant="ghost" 
-                                                                    className="h-8 w-8 p-0 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded-lg group/delete"
-                                                                    onClick={() => handleDeleteVendorOrder(vo.id)}
-                                                                >
-                                                                    <Trash2 className="h-3.5 w-3.5 transition-transform group-hover/delete:scale-110" />
-                                                                </Button>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
+                                return Object.entries(grouped).map(([category, orders]) => (
+                                    <div key={category} className="space-y-4">
+                                        <div className="flex items-center gap-4 px-4">
+                                            <div className="h-8 w-8 rounded-xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20">
+                                                <Zap className="h-4 w-4 text-indigo-500" />
+                                            </div>
+                                            <h4 className="text-lg font-black text-slate-800 dark:text-white tracking-tight italic uppercase">{category}</h4>
+                                            <Separator className="flex-1 opacity-10" />
+                                            <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest border-slate-200">
+                                                {orders.length} BUNDLES
+                                            </Badge>
+                                        </div>
+
+                                        <div className="bg-white dark:bg-slate-950 rounded-[2.5rem] border border-border/60 shadow-sm overflow-hidden transition-all hover:shadow-xl">
+                                            <div className="overflow-x-auto">
+                                                <table className="w-full text-sm">
+                                                    <thead className="bg-slate-50/80 dark:bg-slate-900 border-b border-border/50">
+                                                        <tr>
+                                                            <th className="px-6 py-5 text-left font-black text-[10px] text-muted-foreground uppercase tracking-[0.2em]">Entity / PO #</th>
+                                                            <th className="px-6 py-5 text-left font-black text-[10px] text-muted-foreground uppercase tracking-[0.2em]">Discovery Date</th>
+                                                            <th className="px-6 py-5 text-right font-black text-[10px] text-muted-foreground uppercase tracking-[0.2em]">Bundle Value</th>
+                                                            <th className="px-6 py-5 text-center font-black text-[10px] text-muted-foreground uppercase tracking-[0.2em]">Work Status</th>
+                                                            <th className="px-6 py-5 text-center font-black text-[10px] text-muted-foreground uppercase tracking-[0.2em]">Analysis</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-border/30">
+                                                        {orders.map((vo) => (
+                                                            <tr key={vo.id} className="group hover:bg-slate-50/50 dark:hover:bg-slate-900 transition-colors">
+                                                                <td className="px-6 py-6">
+                                                                    <div className="flex flex-col gap-0.5">
+                                                                        <span className="font-black text-slate-900 dark:text-white group-hover:text-indigo-600 transition-colors text-base tracking-tight italic">{vo.vendor_name || 'Unassigned Vendor'}</span>
+                                                                        <span className="text-[10px] text-slate-400 font-mono uppercase tracking-wider">{vo.po_number || `BNDL-${vo.id}`}</span>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-6 py-6 text-slate-500 font-bold text-xs uppercase tracking-tighter">
+                                                                    {vo.po_date || (vo.created_at ? new Date(vo.created_at).toLocaleDateString() : '--')}
+                                                                </td>
+                                                                <td className="px-6 py-6 text-right">
+                                                                    <span className="font-black text-indigo-700 dark:text-indigo-400 text-base">{formatCurrency(vo.po_value || vo.amount || 0)}</span>
+                                                                </td>
+                                                                <td className="px-6 py-6 text-center">
+                                                                    <Badge 
+                                                                        variant="outline" 
+                                                                        className={cn(
+                                                                            "text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-xl border-2",
+                                                                            vo.work_status === 'completed' ? "bg-emerald-500/5 text-emerald-600 border-emerald-500/20" :
+                                                                            vo.work_status === 'in_progress' ? "bg-blue-500/5 text-blue-600 border-blue-500/20" :
+                                                                            "bg-amber-500/5 text-amber-600 border-amber-500/20"
+                                                                        )}
+                                                                    >
+                                                                        {vo.work_status || 'pending'}
+                                                                    </Badge>
+                                                                </td>
+                                                                <td className="px-6 py-6">
+                                                                    <div className="flex items-center justify-center gap-2">
+                                                                        <Button 
+                                                                            size="sm" 
+                                                                            variant="outline" 
+                                                                            className="h-9 px-5 rounded-xl border-slate-200 text-slate-900 dark:text-white hover:bg-slate-900 hover:text-white font-black text-[10px] uppercase tracking-widest shadow-sm transition-all active:scale-95"
+                                                                            onClick={() => {
+                                                                                setSelectedDetailsOrder(vo);
+                                                                                setIsVendorOrderDetailsOpen(true);
+                                                                            }}
+                                                                        >
+                                                                            View Bundle
+                                                                        </Button>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            ) : (
-                                <div className="py-16 rounded-[2.5rem] border-2 border-dashed border-border/60 text-center flex flex-col items-center justify-center bg-muted/5 group">
-                                    <div className="h-16 w-16 rounded-3xl bg-indigo-500/5 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500">
-                                        <Package className="h-8 w-8 text-indigo-500 opacity-20" />
-                                    </div>
-                                    <h4 className="text-lg font-black text-foreground tracking-tight">Project Vendors Idle</h4>
-                                    <p className="text-xs text-muted-foreground mt-2 mb-8 max-w-[300px] font-bold uppercase tracking-widest opacity-60 leading-relaxed">
-                                        No vendor orders linked to this project scope.
-                                    </p>
-                                    <Button onClick={() => setIsVendorOrderDialogOpen(true)} variant="outline" className="h-11 px-8 rounded-2xl border-indigo-500/20 text-indigo-600 hover:bg-indigo-50 font-black uppercase text-[10px] tracking-[0.2em] shadow-lg shadow-indigo-600/5 transition-all active:scale-95">
-                                        <Plus className="h-4 w-4 mr-2" />
-                                        Initiate Order
-                                    </Button>
+                                ));
+                            })()}
+
+                            {vendorOrders.length === 0 && (
+                                <div className="py-24 flex flex-col items-center justify-center bg-white dark:bg-slate-950 rounded-[3rem] border-2 border-dashed border-slate-200 dark:border-slate-800">
+                                    <Package className="h-16 w-16 text-slate-200 mb-6 opacity-50" />
+                                    <h3 className="text-base font-black text-slate-400 uppercase tracking-widest">No Bundle Logistics Detected</h3>
+                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Initiate grouping via the orchestrator above</p>
                                 </div>
                             )}
                         </div>
@@ -1606,6 +1595,12 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
 
 
 
+      <VendorOrderDetails 
+        open={isVendorOrderDetailsOpen} 
+        onClose={() => setIsVendorOrderDetailsOpen(false)} 
+        vendorOrder={selectedDetailsOrder}
+      />
+
       <VendorOrderDialog 
         open={isVendorOrderDialogOpen} 
         onClose={() => setIsVendorOrderDialogOpen(false)} 
@@ -1623,6 +1618,11 @@ const DetailDrawer = ({ open, onClose, data, onProjectDeleted }: DetailDrawerPro
         open={isVendorOrderDetailsOpen} 
         onClose={() => setIsVendorOrderDetailsOpen(false)} 
         vendorOrder={selectedDetailsOrder}
+        onSuccess={async () => {
+          await fetchData(true); // Refresh DetailDrawer data with cache bypass
+          // If refreshData exists in scope, call it too
+          if (typeof refreshData === 'function') await refreshData(true);
+        }}
       />
 
       {/* Add Payment Dialog */}

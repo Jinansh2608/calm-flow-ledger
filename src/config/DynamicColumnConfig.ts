@@ -119,6 +119,65 @@ export const QUOTATION_COLUMNS: ColumnConfig[] = [
   },
 ];
 
+export const PROCUREMENT_COLUMNS: ColumnConfig[] = [
+  {
+    key: 'item_name',
+    label: 'Order Item / Entity',
+    width: 250,
+    alignment: 'left',
+    inputType: 'searchable',
+    required: true,
+    editable: true,
+  },
+  {
+    key: 'quantity',
+    label: 'Qty',
+    width: 80,
+    alignment: 'right',
+    inputType: 'number',
+    editable: true,
+    defaultValue: 1,
+    format: 'number',
+  },
+  {
+    key: 'unit_price',
+    label: 'Unit Price',
+    width: 120,
+    alignment: 'right',
+    inputType: 'number',
+    editable: true,
+    defaultValue: 0,
+    format: 'currency',
+  },
+  {
+    key: 'status',
+    label: 'Status',
+    width: 120,
+    alignment: 'center',
+    inputType: 'dropdown',
+    editable: true,
+    defaultValue: 'pending',
+    dropdownOptions: ['pending', 'ordered', 'shipped', 'delivered', 'cancelled'],
+  },
+  {
+    key: 'order_date',
+    label: 'Date',
+    width: 120,
+    alignment: 'right',
+    inputType: 'text',
+    editable: true,
+  },
+  {
+    key: 'total_price',
+    label: 'Total Cost',
+    width: 140,
+    alignment: 'right',
+    inputType: 'readonly',
+    editable: false,
+    format: 'currency',
+  },
+];
+
 // ============================================================
 // HELPER FUNCTIONS
 // ============================================================

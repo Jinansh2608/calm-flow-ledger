@@ -1,14 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Wallet, ArrowDownLeft, ArrowUpRight, TrendingUp, DollarSign } from "lucide-react";
 import { DashboardProvider, useDashboard, ClientPO } from "@/contexts/DashboardContext";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import FilterSidebar from "@/components/dashboard/FilterSidebar";
 import SummaryCard from "@/components/dashboard/SummaryCard";
 import ClientPOTable from "@/components/dashboard/ClientPOTable";
-import VendorPOTracking from "@/components/dashboard/VendorPOTracking";
+import VendorManagementCard from "@/components/dashboard/VendorManagementCard";
 import ProfitMarginSection from "@/components/dashboard/ProfitMarginSection";
 import DetailDrawer from "@/components/dashboard/DetailDrawer";
 import QuotationDashboard from "@/components/dashboard/QuotationDashboard";
+import { Badge } from "@/components/ui/badge";
 
 import { clientService } from "@/services/clientService";
 
@@ -21,10 +22,17 @@ const formatCurrency = (value: number) => {
 };
 
 const DashboardContent = () => {
-  const { summaryData, isFiltered, filteredClientPOs, filteredVendorPOs, projects, refreshData, loading } = useDashboard();
+  const { summaryData, isFiltered, appliedFilters, filteredClientPOs, filteredVendorPOs, projects, refreshData, loading } = useDashboard();
   const [selectedPO, setSelectedPO] = useState<ClientPO | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [clients, setClients] = useState<any[]>([]);
+
+  // Memoize current project ID for context-aware sections
+  const currentProjectId = useMemo(() => {
+    if (appliedFilters.project === "all") return undefined;
+    const project = projects.find(p => p.name === appliedFilters.project);
+    return project?.id;
+  }, [appliedFilters.project, projects]);
 
   // Load clients on mount
   const loadClients = async () => {
@@ -149,7 +157,7 @@ const DashboardContent = () => {
           )}
 
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             <SummaryCard
               title="Total Client PO Value"
               value={formatCurrency(summaryData.totalClientPOValue)}
@@ -211,57 +219,40 @@ const DashboardContent = () => {
                 }))
               }}
             />
-            <SummaryCard
-              title="Payables"
-              value={formatCurrency(summaryData.payables)}
-              subtitle={`To ${summaryData.vendorCount} vendor${summaryData.vendorCount !== 1 ? 's' : ''}`}
-              icon={<ArrowUpRight className="h-5 w-5" />}
-              details={{
-                title: "Payables",
-                description: "Outstanding payments to vendors",
-                items: [
-                  { label: "Total Outstanding", value: formatCurrency(summaryData.payables), highlight: true },
-                  { label: "Pending Payments", value: `${payableBreakdown.length}` },
-                  { label: "Payment Rate", value: `${((1 - summaryData.payables / Math.max(summaryData.totalVendorPOValue, 1)) * 100).toFixed(0)}%` },
-                ],
-                breakdown: payableBreakdown.slice(0, 5).map(item => ({
-                  label: item.label,
-                  value: formatCurrency(item.value),
-                  percentage: (item.value / Math.max(summaryData.payables, 1)) * 100
-                }))
-              }}
-            />
-            <SummaryCard
-              title="Net Profit"
-              value={formatCurrency(Math.abs(summaryData.netProfit))}
-              subtitle={`${margin}% margin`}
-              icon={<TrendingUp className="h-5 w-5" />}
-              variant={summaryData.netProfit >= 0 ? "success" : "default"}
-              details={{
-                title: "Profit Analysis",
-                description: "Revenue minus costs breakdown",
-                items: [
-                  { label: "Total Revenue", value: formatCurrency(summaryData.totalClientPOValue) },
-                  { label: "Total Vendor Cost", value: `-${formatCurrency(summaryData.totalVendorPOValue)}` },
-                  { label: "Operational Cost (5%)", value: `-${formatCurrency(summaryData.totalClientPOValue * 0.05)}` },
-                  { label: "Net Profit", value: formatCurrency(summaryData.netProfit), highlight: true },
-                ],
-                breakdown: [
-                  { label: "Gross Margin", value: `${((summaryData.totalClientPOValue - summaryData.totalVendorPOValue) / Math.max(summaryData.totalClientPOValue, 1) * 100).toFixed(1)}%`, percentage: ((summaryData.totalClientPOValue - summaryData.totalVendorPOValue) / Math.max(summaryData.totalClientPOValue, 1) * 100) },
-                  { label: "Net Margin", value: `${margin}%`, percentage: parseFloat(margin) },
-                ]
-              }}
-            />
           </div>
 
-          {/* Main Content Grid - Now full width without insights panel */}
+          {/* Project Context — Show Project Name and Vendor Master */}
+          <div className="mb-12 space-y-6">
+             {appliedFilters.project !== "all" && (
+                <div className="flex items-end justify-between border-b border-indigo-500/10 pb-4">
+                   <div className="space-y-1">
+                     <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em]">Active Project Context</p>
+                     <h2 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight italic">
+                       {appliedFilters.project}
+                     </h2>
+                   </div>
+                   <div className="flex items-center gap-2 mb-1">
+                     <Badge className="bg-emerald-500/10 text-emerald-600 border-none px-3 h-6 text-[10px] font-black uppercase tracking-widest">
+                        Project Operations
+                     </Badge>
+                      {appliedFilters.client !== "all" && (
+                         <Badge className="bg-indigo-500/10 text-indigo-600 border-none px-3 h-6 text-[10px] font-black uppercase tracking-widest">
+                           {appliedFilters.client}
+                         </Badge>
+                      )}
+                   </div>
+                </div>
+             )}
+             
+          </div>
+
+          {/* Main Content Areas */}
           <div className="space-y-12">
             <QuotationDashboard />
             <ClientPOTable onSelectPO={handleSelectPO} />
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-              <VendorPOTracking />
+              <VendorManagementCard projectId={currentProjectId} />
               <ProfitMarginSection />
             </div>
           </div>

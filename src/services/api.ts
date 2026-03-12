@@ -333,7 +333,10 @@ class APIClient {
   ): Promise<StandardResponse<T>> {
     const requestId = this.generateRequestId();
     const method = (options.method || 'GET').toUpperCase();
-    const retries = options.retries ?? 3;
+    
+    // Default to 1 retry for non-GET requests to prevent duplicate transactions
+    const defaultRetries = method === 'GET' ? 3 : 1;
+    const retries = options.retries ?? defaultRetries;
     const retryDelay = options.retryDelay ?? 1000;
     const bypassCache = options.bypassCache ?? false;
 

@@ -101,6 +101,10 @@ interface DashboardContextType {
   verbalAgreements: VerbalAgreement[];
   allPayments: Payment[];
   
+  // Procurement Bundles
+  vendorBundles: any[];
+  categoryBundles: any[];
+  
   summaryData: {
     totalClientPOValue: number;
     totalVendorPOValue: number;
@@ -124,6 +128,7 @@ interface DashboardContextType {
   };
   isFiltered: boolean;
   loading: boolean;
+  isRefreshing: boolean;
   error: string | null;
   refreshData: (silent?: boolean) => Promise<void>;
   plAnalysisData: Map<number, any>;
@@ -171,11 +176,17 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
   const [allPayments, setAllPayments] = useState<Payment[]>([]);
   const [plAnalysisData, setPlAnalysisData] = useState<Map<number, any>>(new Map());
   
+  // Real-time Bundled Procurement State
+  const [vendorBundles, setVendorBundles] = useState<any[]>([]);
+  const [categoryBundles, setCategoryBundles] = useState<any[]>([]);
+  
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = async (silent = false) => {
     if (!silent) setLoading(true);
+    else setIsRefreshing(true);
     setError(null);
     try {
       // PHASE 1: Load critical data only
@@ -207,6 +218,15 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
         clients = res?.data?.clients || (Array.isArray(res) ? res : []);
       } catch (e) { console.warn("Failed to load clients", e); }
 
+      // PHASE 1.5: Load Procurement Bundles
+      try {
+        const grouped = await vendorService.getAllVendorOrdersGrouped(silent);
+        setCategoryBundles(grouped || []);
+        
+        const vendorData = await vendorService.getVendorsWithOrders(silent);
+        setVendorBundles(vendorData || []);
+      } catch (e) { console.warn("Failed to load procurement bundles", e); }
+
       setProjects(projects);
       setVendors(vendors);
 
@@ -233,12 +253,20 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
       const finalClients = Array.from(poClientMap.values());
       setClients(finalClients.length > 0 ? finalClients : fallbackClients);
 
-      // Fetch Vendor Orders for all projects (this is still needed for initial summaries)
-      const vendorOrderPromises = projects.map(p => 
-        vendorService.getProjectVendorOrders(p.id, silent).catch(() => [])
-      );
-      const vendorOrdersArrays = await Promise.all(vendorOrderPromises);
-      const allVendorOrders = vendorOrdersArrays.flat();
+      // Fetch Global Vendor Orders (Master View)
+      // This is much more efficient than fetching per-project
+      let allVendorOrders: APIVendorOrder[] = [];
+      try {
+        allVendorOrders = await vendorService.getAllVendorOrders(silent);
+      } catch (e) {
+        console.warn("Failed to fetch all vendor orders, falling back to per-project", e);
+        // Fallback: Fetch per project if master endpoint fails
+        const vendorOrderPromises = projects.map(p => 
+          vendorService.getProjectVendorOrders(p.id, silent).catch(() => [])
+        );
+        const vendorOrdersArrays = await Promise.all(vendorOrderPromises);
+        allVendorOrders = vendorOrdersArrays.flat();
+      }
 
        // Map Aggregated Bundles to ClientPO
       const mappedClientPOs: ClientPO[] = bundles.map(bundle => {
@@ -434,11 +462,18 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
       setError(err.message || "Failed to load data");
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
   useEffect(() => {
     fetchData();
+    // Background refetch every 5 minutes
+    const intervalId = setInterval(() => {
+      fetchData(true); // true = silent refresh
+    }, 5 * 60 * 1000);
+
+    return () => clearInterval(intervalId);
   }, []);
 
   const applyFilters = () => {
@@ -643,10 +678,13 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
         flowData,
         isFiltered,
         loading,
+        isRefreshing,
         error,
         refreshData: fetchData,
         plAnalysisData,
         filteredPayments,
+        vendorBundles,
+        categoryBundles
       }}
     >
       {children}

@@ -26,22 +26,10 @@ export const vendorService = {
         body: JSON.stringify(request)
       });
       
-      // Handle standard response wrapper
-      if (response && response.data) {
-          return response.data;
-      }
-      
-      // Handle direct object response (if backend returns unwrapped object)
-      if (response && (response as any).id) {
-          return response as unknown as Vendor;
-      }
-      
-      // Handle nested under 'vendor' key if applicable
-      if (response && (response as any).vendor) {
-           return (response as any).vendor;
-      }
+      if (response && response.data) return response.data;
+      if (response && (response as any).id) return response as unknown as Vendor;
+      if (response && (response as any).vendor) return (response as any).vendor;
 
-      console.warn("Unexpected createVendor response:", response);
       return response as unknown as Vendor;
     } catch (error: unknown) {
       console.error("Failed to create vendor:", error);
@@ -89,8 +77,30 @@ export const vendorService = {
       return response.data || response;
     } catch (error: unknown) {
       console.error("Failed to fetch vendors:", error);
-      // Return empty list as fallback
-      return { data: [], total: 0, limit: filters?.limit || 50, offset: filters?.offset || 0 };
+      return { vendors: [], data: [], total: 0, limit: filters?.limit || 50, offset: filters?.offset || 0 };
+    }
+  },
+
+  /**
+   * Get all vendors with their associated orders
+   */
+  getVendorsWithOrders: async (bypassCache: boolean = false) => {
+    try {
+      const result = await vendorService.getAllVendors({}, bypassCache);
+      const vendors = result.vendors || result.data || [];
+      const vendorsWithOrders = await Promise.all(vendors.map(async (v: any) => {
+        const orders = await vendorService.getVendorOrdersByVendor(v.id, bypassCache);
+        return {
+          ...v,
+          orders,
+          order_count: orders.length,
+          total_value: orders.reduce((sum: number, o: any) => sum + (o.po_value || o.amount || 0), 0)
+        };
+      }));
+      return vendorsWithOrders;
+    } catch (error: unknown) {
+      console.error("Failed to fetch vendors with orders:", error);
+      return [];
     }
   },
 
@@ -192,7 +202,6 @@ export const vendorService = {
       const response = await apiRequest<any>(
         `/vendors/${vendorId}/payments?limit=${limit}&offset=${offset}`
       );
-      // Handle wrapped response (standard list or specific key)
       const data = response.data;
       if (Array.isArray(data)) return data;
       return data?.data || data?.payments || [];
@@ -204,11 +213,6 @@ export const vendorService = {
 
   /**
    * Record a payment for vendor order
-   * Uses vendor order-level endpoint instead of vendor-level
-   * POST /api/vendor-orders/{order_id}/payments
-   * 
-   * @param vendorOrderId - The vendor order ID (required)
-   * @param payment - Payment details
    */
   recordVendorPayment: async (vendorOrderId: number, payment: {
     amount: number;
@@ -216,7 +220,6 @@ export const vendorService = {
     status: 'COMPLETED' | 'PENDING' | 'BOUNCED';
   }) => {
     try {
-      // Note: Backend endpoint is at order level, not vendor level
       const response = await apiRequest<VendorPayment>(
         `/vendor-orders/${vendorOrderId}/payments`,
         {
@@ -237,7 +240,6 @@ export const vendorService = {
 
   /**
    * Create vendor order
-   * POST /api/projects/{project_id}/vendor-orders
    */
   createVendorOrder: async (projectId: number, request: {
     vendor_id: number;
@@ -260,12 +262,10 @@ export const vendorService = {
 
   /**
    * Get all vendor orders for a project
-   * GET /api/projects/{project_id}/vendor-orders
    */
   getProjectVendorOrders: async (projectId: number, bypassCache: boolean = false) => {
     try {
       const response: any = await apiRequest<any>(`/projects/${projectId}/vendor-orders`, { bypassCache } as any);
-      // Handle wrapped response
       const data = response.data || response;
       let orders = [];
       if (Array.isArray(data)) {
@@ -273,8 +273,6 @@ export const vendorService = {
       } else {
         orders = data?.data || data?.orders || data?.vendor_orders || [];
       }
-      
-      // Map po_value to amount for frontend consistency
       return orders.map((o: any) => ({
         ...o,
         amount: o.amount || o.po_value || 0
@@ -286,8 +284,70 @@ export const vendorService = {
   },
 
   /**
+   * Get all vendor orders across all projects (Master View)
+   */
+  getAllVendorOrders: async (bypassCache: boolean = false) => {
+    try {
+      const response: any = await apiRequest<any>('/vendor-orders', { bypassCache } as any);
+      const data = response.data || response;
+      let orders = [];
+      if (Array.isArray(data)) {
+        orders = data;
+      } else {
+        orders = data?.vendor_orders || data?.data || [];
+      }
+      return orders.map((o: any) => ({
+        ...o,
+        amount: o.amount || o.po_value || 0
+      }));
+    } catch (error: unknown) {
+      console.error("Failed to fetch all vendor orders:", error);
+      return [];
+    }
+  },
+
+  /**
+   * Get all vendor orders grouped by category
+   */
+  getAllVendorOrdersGrouped: async (bypassCache: boolean = false) => {
+    try {
+      const response: any = await apiRequest<any>('/vendor-orders', { bypassCache } as any);
+      const data = response.data || response;
+      if (data && data.categories) {
+        return data.categories;
+      }
+      return [];
+    } catch (error: unknown) {
+      console.error("Failed to fetch grouped vendor orders:", error);
+      return [];
+    }
+  },
+
+  /**
+   * Get all vendor orders for a specific vendor
+   */
+  getVendorOrdersByVendor: async (vendorId: number, bypassCache: boolean = false) => {
+    try {
+      const response: any = await apiRequest<any>(`/vendors/${vendorId}/orders`, { bypassCache } as any);
+      const data = response.data || response;
+      let orders = [];
+      if (Array.isArray(data)) {
+        orders = data;
+      } else {
+        orders = data?.vendor_orders || data?.data || [];
+      }
+      return orders.map((o: any) => ({
+        ...o,
+        amount: o.amount || o.po_value || 0
+      }));
+    } catch (error: unknown) {
+      console.error(`Failed to fetch orders for vendor ${vendorId}:`, error);
+      return [];
+    }
+  },
+
+  /**
    * Get vendor order details
-   * GET /api/vendor-orders/{order_id}
    */
   getVendorOrderDetails: async (orderId: number) => {
     try {
@@ -301,7 +361,6 @@ export const vendorService = {
 
   /**
    * Update vendor order
-   * PUT /api/projects/{project_id}/vendor-orders/{order_id}
    */
   updateVendorOrder: async (projectId: number, orderId: number, request: Partial<VendorOrder>) => {
     try {
@@ -321,7 +380,6 @@ export const vendorService = {
 
   /**
    * Update vendor order status
-   * PUT /api/vendor-orders/{order_id}/status
    */
   updateVendorOrderStatus: async (orderId: number, status: string) => {
     try {
@@ -341,7 +399,6 @@ export const vendorService = {
 
   /**
    * Delete vendor order
-   * DELETE /api/projects/{project_id}/vendor-orders/{order_id}
    */
   deleteVendorOrder: async (projectId: number, orderId: number) => {
     try {
@@ -358,13 +415,15 @@ export const vendorService = {
 
   /**
    * Add line item to vendor order
-   * POST /api/vendor-orders/{order_id}/line-items
    */
   addVendorOrderLineItem: async (orderId: number, item: {
-    description: string;
+    item_name: string;
     quantity: number;
     unit_price: number;
-    amount: number;
+    vendor_id?: number;
+    status?: string;
+    delivery_progress?: number;
+    order_date?: string;
   }) => {
     try {
       const response = await apiRequest<Record<string, unknown>>(`/vendor-orders/${orderId}/line-items`, {
@@ -375,6 +434,20 @@ export const vendorService = {
     } catch (error: unknown) {
       console.error(`Failed to add line item to vendor order ${orderId}:`, error);
       throw error;
+    }
+  },
+
+  /**
+   * Get all line items for a category
+   */
+  getCategoryLineItems: async (category: string) => {
+    try {
+      const response: any = await apiRequest<any>(`/vendor-orders/by-category/${encodeURIComponent(category)}/line-items`);
+      const data = response.data || response;
+      return data.line_items || [];
+    } catch (error: unknown) {
+      console.error(`Failed to fetch line items for category ${category}:`, error);
+      return [];
     }
   }
 };

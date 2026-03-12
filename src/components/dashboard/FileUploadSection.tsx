@@ -156,7 +156,7 @@ export const FileUploadSection = ({
           <p className="font-semibold text-amber-900">Upload Guide</p>
           <ul className="text-sm text-amber-800 mt-2 space-y-1 list-disc list-inside">
             <li>Create a new session with project details and optional client selection</li>
-            <li>Upload Excel, CSV, or PDF files (max 50MB each)</li>
+            <li>Upload PDF, Excel (.xlsx, .xls) or CSV files (max 50MB each)</li>
             <li>Enable auto-parse to automatically extract PO data</li>
             <li>Sessions expire after the configured TTL (max 72 hours)</li>
             <li>Download files individually or all at once as ZIP</li>

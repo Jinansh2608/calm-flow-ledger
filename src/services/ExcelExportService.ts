@@ -1,14 +1,10 @@
 // ============================================================
-// EXCEL EXPORT SERVICE — Client 2 BOQ Quotation Format
+// EXCEL EXPORT SERVICE — Enhanced Production Version
 // ============================================================
 
 import * as XLSX from 'xlsx';
 import {
   ColumnConfig,
-  QUOTATION_COLUMNS,
-  QuotationHeader,
-  calculateRowTotals,
-  getGrandTotals,
 } from '@/config/DynamicColumnConfig';
 
 export interface ExportTableData {
@@ -16,75 +12,6 @@ export interface ExportTableData {
   columns: ColumnConfig[];
   rows: Record<string, any>[];
   totals?: Record<string, number>;
-}
-
-// ============================================================
-// QUOTATION EXPORT WITH HEADER (Primary Export)
-// ============================================================
-
-export function exportQuotationWithHeader(
-  header: QuotationHeader,
-  rows: Record<string, any>[]
-): void {
-  const wb = XLSX.utils.book_new();
-  const sheetData: any[][] = [];
-
-  // Header lines: Store ID + 4 fields
-  sheetData.push([`Store ID: ${header.storeId}`]);
-  sheetData.push([header.storeLocation]);
-  sheetData.push([header.fullAddress]);
-  sheetData.push([header.companyName]);
-  sheetData.push([header.totalArea]);
-
-  // Empty row separator
-  sheetData.push([]);
-
-  // Column headers
-  const columnHeaders = QUOTATION_COLUMNS.map(col => col.label);
-  sheetData.push(columnHeaders);
-
-  // Data rows — only grid columns, no calculation columns
-  rows.forEach(row => {
-    const dataRow = QUOTATION_COLUMNS.map(col => {
-      const val = row[col.key];
-      if (col.format === 'percentage' && typeof val === 'number') {
-        return `${val}%`;
-      }
-      return val ?? '';
-    });
-    sheetData.push(dataRow);
-  });
-
-  // Empty row before totals
-  sheetData.push([]);
-
-  // Totals section
-  const totals = getGrandTotals(rows);
-  sheetData.push(['', '', '', '', '', 'Subtotal:', formatNumber(totals.subtotal)]);
-  sheetData.push(['', '', '', '', '', 'Total GST:', formatNumber(totals.totalGST)]);
-  sheetData.push(['', '', '', '', '', 'Final Amount:', formatNumber(totals.finalAmount)]);
-
-  const ws = XLSX.utils.aoa_to_sheet(sheetData);
-
-  // Auto-fit column widths
-  ws['!cols'] = QUOTATION_COLUMNS.map((col, i) => {
-    let maxLen = col.label.length;
-    rows.forEach(row => {
-      const cellLen = String(row[col.key] ?? '').length;
-      if (cellLen > maxLen) maxLen = cellLen;
-    });
-    // First column (header text) might be wider
-    if (i === 0) {
-      maxLen = Math.max(maxLen, header.fullAddress.length, header.storeLocation.length, 40);
-    }
-    return { wch: Math.min(Math.max(maxLen + 2, 12), 60) };
-  });
-
-  XLSX.utils.book_append_sheet(wb, ws, 'Quotation');
-
-  const date = new Date().toISOString().split('T')[0];
-  const storeRef = (header.storeId || header.storeLocation).replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30) || 'Export';
-  XLSX.writeFile(wb, `Quotation_${storeRef}_${date}.xlsx`);
 }
 
 // ============================================================
@@ -101,9 +28,8 @@ export function exportSingleTable(
   const dataRows = tableData.rows.map(row =>
     tableData.columns.map(col => {
       const val = row[col.key];
-      if (col.format === 'currency' && typeof val === 'number') return val;
-      if (col.format === 'percentage' && typeof val === 'number') return `${val}%`;
-      return val ?? '';
+      if (val === undefined || val === null) return '';
+      return val;
     })
   );
 
@@ -122,14 +48,29 @@ export function exportSingleTable(
 
   const ws = XLSX.utils.aoa_to_sheet(sheetData);
 
+  // Apply column widths and number formats
   ws['!cols'] = tableData.columns.map((col, i) => {
     let maxLen = col.label.length;
     dataRows.forEach(row => {
       const cellLen = String(row[i] ?? '').length;
       if (cellLen > maxLen) maxLen = cellLen;
     });
-    return { wch: Math.max(maxLen + 2, 10) };
+    return { wch: Math.min(Math.max(maxLen + 2, 12), 40) };
   });
+
+  // Apply number formats to currency columns
+  const range = XLSX.utils.decode_range(ws['!ref']!);
+  for (let C = range.s.c; C <= range.e.c; ++C) {
+    const colConfig = tableData.columns[C];
+    if (colConfig?.format === 'currency') {
+      for (let R = range.s.r + 1; R <= range.e.r; ++R) {
+        const address = XLSX.utils.encode_cell({ r: R, c: C });
+        if (!ws[address]) continue;
+        ws[address].t = 'n';
+        ws[address].z = '₹#,##0.00'; // Indian Rupee Format
+      }
+    }
+  }
 
   XLSX.utils.book_append_sheet(wb, ws, tableData.title.substring(0, 31));
   XLSX.writeFile(wb, `${fileName}.xlsx`);
@@ -150,10 +91,12 @@ export function exportMultiTableSideBySide(
   const allColWidths: XLSX.ColInfo[] = [];
   let maxRows = 0;
 
-  tables.forEach((table, tableIndex) => {
+  tables.forEach((table) => {
+    // Title row
     const titleCell = XLSX.utils.encode_cell({ r: 0, c: currentCol });
-    ws[titleCell] = { v: table.title, t: 's' };
+    ws[titleCell] = { v: table.title.toUpperCase(), t: 's' };
 
+    // Header row
     table.columns.forEach((col, colIdx) => {
       const cell = XLSX.utils.encode_cell({ r: 1, c: currentCol + colIdx });
       ws[cell] = { v: col.label, t: 's' };
@@ -163,27 +106,34 @@ export function exportMultiTableSideBySide(
         const cellLen = String(row[col.key] ?? '').length;
         if (cellLen > maxLen) maxLen = cellLen;
       });
-      allColWidths[currentCol + colIdx] = { wch: Math.max(maxLen + 2, 10) };
+      allColWidths[currentCol + colIdx] = { wch: Math.min(Math.max(maxLen + 2, 12), 40) };
     });
 
+    // Data rows
     table.rows.forEach((row, rowIdx) => {
       table.columns.forEach((col, colIdx) => {
         const cell = XLSX.utils.encode_cell({ r: rowIdx + 2, c: currentCol + colIdx });
         const val = row[col.key];
+        
         if (typeof val === 'number') {
           ws[cell] = { v: val, t: 'n' };
+          if (col.format === 'currency') {
+            ws[cell].z = '₹#,##0.00';
+          }
         } else {
           ws[cell] = { v: val ?? '', t: 's' };
         }
       });
     });
 
+    // Totals row
     if (table.totals) {
-      const totRow = table.rows.length + 2;
+      const totRowIdx = table.rows.length + 2;
       table.columns.forEach((col, colIdx) => {
-        const cell = XLSX.utils.encode_cell({ r: totRow, c: currentCol + colIdx });
+        const cell = XLSX.utils.encode_cell({ r: totRowIdx, c: currentCol + colIdx });
         if (table.totals![col.key] !== undefined) {
           ws[cell] = { v: table.totals![col.key], t: 'n' };
+          if (col.format === 'currency') ws[cell].z = '₹#,##0.00';
         } else if (colIdx === 0) {
           ws[cell] = { v: 'TOTAL', t: 's' };
         }
@@ -194,21 +144,18 @@ export function exportMultiTableSideBySide(
     }
 
     currentCol += table.columns.length + 2;
-
-    if (tableIndex < tables.length - 1) {
-      allColWidths[currentCol - 2] = { wch: 3 };
-      allColWidths[currentCol - 1] = { wch: 3 };
-    }
+    allColWidths[currentCol - 2] = { wch: 4 }; // Spacer
+    allColWidths[currentCol - 1] = { wch: 4 }; // Spacer
   });
 
   ws['!ref'] = XLSX.utils.encode_range({
     s: { r: 0, c: 0 },
-    e: { r: maxRows, c: currentCol - 1 }
+    e: { r: maxRows, c: Math.max(0, currentCol - 3) }
   });
 
   ws['!cols'] = allColWidths;
 
-  XLSX.utils.book_append_sheet(wb, ws, 'Combined Export');
+  XLSX.utils.book_append_sheet(wb, ws, 'Combined Reports');
   XLSX.writeFile(wb, `${fileName}.xlsx`);
 }
 
@@ -218,10 +165,14 @@ export function exportMultiTableSideBySide(
 
 export function exportCombined(tables: ExportTableData[]): void {
   const date = new Date().toISOString().split('T')[0];
-  exportMultiTableSideBySide(tables, `Combined_Export_${date}`);
+  exportMultiTableSideBySide(tables, `Financial_Reports_${date}`);
 }
 
-// Helper
-function formatNumber(val: number): string {
-  return val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+// Legacy support (keeping if needed but usually better to use generic exportSingleTable)
+export function exportQuotationWithHeader(header: any, rows: any[]): void {
+  exportSingleTable({
+    title: 'Quotation',
+    columns: require('@/config/DynamicColumnConfig').QUOTATION_COLUMNS,
+    rows: rows
+  }, 'Quotation_Export');
 }

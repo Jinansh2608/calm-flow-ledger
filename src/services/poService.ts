@@ -199,15 +199,17 @@ export const poService = {
   uploadAndParsePO: async (file: File, clientId: number, projectName?: string, autoSave: boolean = true) => {
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('client_id', String(clientId));
+    if (projectName) formData.append('project_name', projectName);
+    formData.append('auto_save', autoSave ? 'true' : 'false');
     
-    // Build query params
+    // Also add to query params since backend might look for them there initially
     const params = new URLSearchParams();
     params.append('client_id', String(clientId));
-    params.append('auto_save', String(autoSave));
+    params.append('auto_save', autoSave ? 'true' : 'false');
     if (projectName) params.append('project_name', projectName);
     
-    // Using /uploads/po/upload as per backend code check, conflicting with Docs /po/upload
-    // Backend code (Step 337) clearly shows router prefix="/uploads" and route "/po/upload".
+    // Using /uploads/po/upload
     const response = await apiRequest<ParsedPOResponse>(`/uploads/po/upload?${params.toString()}`, {
       method: 'POST',
       body: formData
